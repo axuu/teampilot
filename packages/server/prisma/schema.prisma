@@ -34,6 +34,7 @@ model Member {
   feishuOpenId    String   @unique
   createdAt       DateTime @default(now())
   participants    ActivityParticipant[]
+  notifications   NotificationLog[]
 }
 
 model Activity {
@@ -105,6 +106,7 @@ model NotificationLog {
   createdAt       DateTime  @default(now())
   sentAt          DateTime?
   activity        Activity  @relation(fields: [activityId], references: [id])
+  member          Member    @relation(fields: [memberId], references: [id])
 
   @@index([activityId, type, status])
 }
