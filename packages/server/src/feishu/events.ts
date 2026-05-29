@@ -1,6 +1,9 @@
 import { prisma } from "../db/client.js";
 import * as lark from "@larksuiteoapi/node-sdk";
 import { loadConfig } from "../config/index.js";
+import { createLarkClient } from "./client.js";
+import { answerMemberQuestion } from "../ai/memberBot.js";
+import type { LLMClient } from "../ai/client.js";
 
 type CardEvent = { operator: { open_id: string }; action: { value: { activityId: string; response: string } } };
 const respLabel: Record<string, string> = { going: "去", not_going: "不去", no_response: "未反馈" };
@@ -26,13 +29,30 @@ export async function handleCardAction(event: CardEvent, now: Date): Promise<{ t
   return { text: `已记录：${label(response)}` };
 }
 
-export function startLongConnection() {
+export function startLongConnection(llm: LLMClient) {
   const cfg = loadConfig();
   const wsClient = new lark.WSClient({ appId: cfg.feishuAppId, appSecret: cfg.feishuAppSecret });
   const dispatcher = new lark.EventDispatcher({}).register({
     "card.action.trigger": async (data: CardEvent) => {
       const out = await handleCardAction(data, new Date());
       return { toast: { type: "info", content: out.text } };
+    },
+    "im.message.receive_v1": async (data: any) => {
+      const openId = data?.sender?.sender_id?.open_id;
+      if (!openId) return;
+      const text = JSON.parse(data?.message?.content ?? "{}").text ?? "";
+      if (!text) return; // 忽略非文本消息（图片/表情/文件）
+      try {
+        const answer = await answerMemberQuestion(openId, text, llm, new Date());
+        const client = createLarkClient();
+        await client.im.message.create({ params: { receive_id_type: "open_id" }, data: { receive_id: openId, msg_type: "text", content: JSON.stringify({ text: answer }) } });
+      } catch (e) {
+        console.error("[memberBot] 处理队员消息失败:", e);
+        try {
+          const client = createLarkClient();
+          await client.im.message.create({ params: { receive_id_type: "open_id" }, data: { receive_id: openId, msg_type: "text", content: JSON.stringify({ text: "出错了，请稍后再试。" }) } });
+        } catch { /* best-effort fallback */ }
+      }
     },
   });
   wsClient.start({ eventDispatcher: dispatcher });

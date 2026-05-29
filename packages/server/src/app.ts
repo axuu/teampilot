@@ -9,6 +9,10 @@ import { attendanceRouter } from "./attendance/routes.js";
 import { larkAuthClient, type FeishuAuthClient } from "./feishu/auth.js";
 import { larkNotifier, type FeishuNotifier } from "./feishu/notify.js";
 import { createJoinRouter } from "./members/join.js";
+import { settingsRouter } from "./settings/routes.js";
+import { arkClient, type LLMClient } from "./ai/client.js";
+import { makeReviewsRouter } from "./reviews/routes.js";
+import { makeAssistantRouter } from "./assistant/routes.js";
 
 declare global {
   namespace Express {
@@ -16,9 +20,10 @@ declare global {
   }
 }
 
-export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: FeishuNotifier } = {}) {
+export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: FeishuNotifier; llm?: LLMClient } = {}) {
   const feishuAuth = deps.feishuAuth ?? larkAuthClient;
   const notifier = deps.notifier ?? larkNotifier;
+  const llm = deps.llm ?? arkClient;
   const config = loadConfig();
   const app = express();
   app.use(express.json({ limit: "1mb" }));
@@ -26,8 +31,11 @@ export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: Feis
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/admin", authRouter);
   app.use("/api/admin/members", membersRouter);
-  app.use("/api/admin/activities", makeActivitiesRouter(notifier));
+  app.use("/api/admin/activities", makeActivitiesRouter(notifier, llm));
   app.use("/api/admin/activities", attendanceRouter);
+  app.use("/api/admin/activities", makeReviewsRouter(llm));
+  app.use("/api/admin/settings", settingsRouter);
+  app.use("/api/admin/assistant", makeAssistantRouter(llm));
   app.use("/api/h5", createJoinRouter(feishuAuth));
   app.use((err: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
     console.error("未处理错误:", err);
