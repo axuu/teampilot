@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { userEvent } from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import Members from "../src/pages/Members.js";
 import { ToastProvider } from "../src/components/Toast.js";
