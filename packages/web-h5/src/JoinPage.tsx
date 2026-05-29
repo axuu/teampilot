@@ -9,6 +9,8 @@ export default function JoinPage({ bridge }: { bridge: FeishuBridge }) {
   const [view, setView] = useState<View>("loading");
   const [code, setCode] = useState<string | null>(null);
   const [f, setF] = useState({ name: "", primaryPosition: "", backupPosition: "", level: "", style: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState("");
   const set = (k: string, v: string) => setF((p)=>({ ...p, [k]: v }));
   const token = getJoinToken();
 
@@ -18,11 +20,18 @@ export default function JoinPage({ bridge }: { bridge: FeishuBridge }) {
   }, []);
 
   async function submit() {
-    const res = await post<{ status: string }>("/api/h5/join", { token, code, form: { name: f.name, primaryPosition: f.primaryPosition, backupPosition: f.backupPosition||undefined, level: f.level||undefined, style: f.style||undefined } });
-    if (res.status === "created" || res.status === "already_joined") setView("joined");
-    else if (res.status === "contact_captain") setView("contact_captain");
-    else if (res.status === "identity_failed") setView("identity_failed");
-    else setView("invalid_link");
+    setSubmitting(true); setErr("");
+    try {
+      const res = await post<{ status: string }>("/api/h5/join", { token, code, form: { name: f.name, primaryPosition: f.primaryPosition, backupPosition: f.backupPosition||undefined, level: f.level||undefined, style: f.style||undefined } });
+      if (res.status === "created" || res.status === "already_joined") setView("joined");
+      else if (res.status === "contact_captain") setView("contact_captain");
+      else if (res.status === "identity_failed") setView("identity_failed");
+      else setView("invalid_link");
+    } catch {
+      setErr("提交失败，请重试");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (view === "loading") return <Center>加载中…</Center>;
@@ -41,7 +50,8 @@ export default function JoinPage({ bridge }: { bridge: FeishuBridge }) {
         <div><label>备选位置</label><select aria-label="备选位置" className="block w-full border rounded px-2 py-1" value={f.backupPosition} onChange={(e)=>set("backupPosition",e.target.value)}><option value="">请选择</option>{POSITIONS.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
         <div><label>水平</label><select aria-label="水平" className="block w-full border rounded px-2 py-1" value={f.level} onChange={(e)=>set("level",e.target.value)}><option value="">请选择</option>{MEMBER_LEVELS.map(l=><option key={l} value={l}>{l}</option>)}</select></div>
         <div><label>风格</label><select aria-label="风格" className="block w-full border rounded px-2 py-1" value={f.style} onChange={(e)=>set("style",e.target.value)}><option value="">请选择</option>{MEMBER_STYLES.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
-        <button className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-50" disabled={!f.name || !f.primaryPosition} onClick={()=>void submit()}>申请加入球队</button>
+        {err && <p className="text-red-600 text-sm">{err}</p>}
+        <button className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-50" disabled={submitting || !f.name || !f.primaryPosition} onClick={()=>void submit()}>{submitting ? "提交中…" : "申请加入球队"}</button>
       </div>
     </div>
   );

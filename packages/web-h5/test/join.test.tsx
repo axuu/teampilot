@@ -34,4 +34,13 @@ describe("JoinPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "申请加入球队" }));
     expect(await screen.findByText("已加入球队")).toBeInTheDocument();
   });
+  it("shows an error and stays on the form when submit fails", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("network"));
+    render(<JoinPage bridge={okBridge} />);
+    await userEvent.type(await screen.findByLabelText("姓名"), "甲");
+    await userEvent.selectOptions(screen.getByLabelText("擅长位置"), "tekong");
+    await userEvent.click(screen.getByRole("button", { name: "申请加入球队" }));
+    expect(await screen.findByText("提交失败，请重试")).toBeInTheDocument();
+    expect(screen.getByLabelText("姓名")).toBeInTheDocument(); // still on the form
+  });
 });
