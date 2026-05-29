@@ -4,6 +4,7 @@ import { loadConfig } from "./config/index.js";
 import { authRouter } from "./auth/routes.js";
 import { membersRouter } from "./members/routes.js";
 import { activitiesRouter } from "./activities/routes.js";
+import { attendanceRouter } from "./attendance/routes.js";
 import { larkAuthClient, type FeishuAuthClient } from "./feishu/auth.js";
 import { createJoinRouter } from "./members/join.js";
 
@@ -23,6 +24,7 @@ export function createApp(deps: { feishuAuth?: FeishuAuthClient } = {}) {
   app.use("/api/admin", authRouter);
   app.use("/api/admin/members", membersRouter);
   app.use("/api/admin/activities", activitiesRouter);
+  app.use("/api/admin/activities", attendanceRouter);
   app.use("/api/h5", createJoinRouter(feishuAuth));
   return app;
 }
