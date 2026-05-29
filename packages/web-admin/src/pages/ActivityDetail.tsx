@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { get, post } from "../api.js";
 import SummaryTab from "./tabs/SummaryTab.js";
 import AttendanceTab from "./tabs/AttendanceTab.js";
+import ReviewTab from "./tabs/ReviewTab.js";
 
 export default function ActivityDetail() {
   const { id } = useParams(); const nav = useNavigate();
@@ -29,7 +30,7 @@ export default function ActivityDetail() {
       </div>
       {tab==="summary" && <SummaryTab detail={detail} />}
       {tab==="attendance" && <AttendanceTab detail={detail} onChanged={()=>void load()} />}
-      {tab==="review" && <p className="text-gray-400 text-sm">复盘功能将在阶段3 启用。</p>}
+      {tab==="review" && <ReviewTab detail={detail} />}
     </div>
   );
 }

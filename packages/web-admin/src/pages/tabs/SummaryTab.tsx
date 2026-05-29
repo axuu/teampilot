@@ -7,6 +7,9 @@ export default function SummaryTab({ detail }: { detail: Detail }) {
   const fmt = (d: Date) => d.toLocaleString("zh-CN");
 
   const [notif, setNotif] = useState<{ success: number; failed: number } | null>(null);
+  const [advice, setAdvice] = useState<any>(null); const [adviceBusy, setAdviceBusy] = useState(false);
+  const adviceLabel = detail.type === "training" ? "训练建议" : "比赛建议";
+  async function genAdvice() { setAdviceBusy(true); try { setAdvice(await post(`/api/admin/activities/${detail.id}/advice`)); } catch { /* ignore */ } finally { setAdviceBusy(false); } }
   useEffect(() => {
     if (detail.status === "draft") return;
     void get<{ success: number; failed: number }>(`/api/admin/activities/${detail.id}/notifications`).then(setNotif);
@@ -19,8 +22,12 @@ export default function SummaryTab({ detail }: { detail: Detail }) {
       <p><b>地点</b> {detail.location}</p>
       <p><b>活动主题</b><br/>{detail.theme || "—"}</p>
       <p><b>注意事项</b><br/>{detail.notes || "—"}</p>
-      {/* 训练/比赛建议区 + 活动总结区：阶段3（Plan D）补 */}
-      <p className="text-gray-400">{detail.summary || "当前暂无活动总结"}</p>
+      <div className="border-t pt-3">
+        <p className="font-semibold">🤖 {adviceLabel}</p>
+        {!advice && <button className="text-blue-600 text-sm" disabled={adviceBusy} onClick={() => void genAdvice()}>{adviceBusy ? "生成中…" : `生成${adviceLabel}`}</button>}
+        {advice && <><pre className="whitespace-pre-wrap text-sm bg-gray-50 rounded p-2">{Object.values(advice).join("\n\n")}</pre><button className="text-blue-600 text-sm" onClick={() => void genAdvice()}>重新生成</button></>}
+      </div>
+      <div className="border-t pt-3"><p className="font-semibold">🤖 活动总结</p><p className="text-sm whitespace-pre-wrap">{detail.summary || <span className="text-gray-400">当前暂无活动总结</span>}</p></div>
       {notif && (
         <div className="border-t pt-3 mt-3 text-sm">
           <span className="text-gray-500">通知状态：</span>成功 {notif.success} / 失败 {notif.failed}
