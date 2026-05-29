@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db/client.js";
 import { loadConfig } from "../config/index.js";
 import { zJoinForm } from "@teampilot/shared";
@@ -22,8 +23,17 @@ export function createJoinRouter(feishuAuth: FeishuAuthClient) {
     if (existing) {
       return res.json({ status: existing.status === "left" ? "contact_captain" : "already_joined" });
     }
-    await prisma.member.create({ data: { ...parsed.data.form, feishuOpenId: openId, status: "active" } });
-    return res.json({ status: "created" });
+    try {
+      await prisma.member.create({ data: { ...parsed.data.form, feishuOpenId: openId, status: "active" } });
+      return res.json({ status: "created" });
+    } catch (e) {
+      // 并发/双击：唯一约束冲突说明已被另一请求创建 → 视为已加入
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") {
+        return res.json({ status: "already_joined" });
+      }
+      console.error("入队创建失败:", e);
+      return res.status(500).json({ status: "error" });
+    }
   });
   return router;
 }

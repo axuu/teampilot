@@ -3,6 +3,7 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetDb } from "./helpers/db.js";
 import { prisma } from "../src/db/client.js";
+import { Prisma } from "@prisma/client";
 import type { FeishuAuthClient } from "../src/feishu/auth.js";
 
 // 假 feishu：code 直接当 open_id；"fail" 代表识别失败
@@ -42,5 +43,13 @@ describe("H5 join", () => {
     expect(res.body.status).toBe("contact_captain");
     const m = await prisma.member.findUnique({ where: { feishuOpenId: "ou_b" } });
     expect(m?.status).toBe("left");
+  });
+  it("treats a P2002 unique-constraint race as already_joined", async () => {
+    const spy = vi.spyOn(prisma.member, "create").mockRejectedValueOnce(
+      new Prisma.PrismaClientKnownRequestError("Unique constraint failed", { code: "P2002", clientVersion: "6.x" })
+    );
+    const res = await join({ token, code: "ou_race", form: { name: "丙", primaryPosition: "tekong" } });
+    expect(res.body.status).toBe("already_joined");
+    spy.mockRestore();
   });
 });
