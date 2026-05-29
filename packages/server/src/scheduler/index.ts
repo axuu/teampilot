@@ -1,4 +1,6 @@
 import { prisma } from "../db/client.js";
+import { sendReminder } from "../notifications/service.js";
+import { larkNotifier, type FeishuNotifier } from "../feishu/notify.js";
 
 // 找出 published 且已过 start+duration 的活动，置为 ended，并把 going 的参与者初始化为 pending
 export async function runAutoEnd(now: Date) {
@@ -16,10 +18,23 @@ export async function runAutoEnd(now: Date) {
   }
 }
 
+export async function runReminders(now: Date, notifier: FeishuNotifier) {
+  const due = await prisma.activity.findMany({
+    where: { status: "published", reminderAt: { not: null, lte: now } },
+  });
+  for (const a of due) {
+    // 幂等：sendReminder 即使失败也会写日志，故 >0 表示本活动已尝试过提醒（失败补发走概要 Tab 手动重试）
+    const already = await prisma.notificationLog.count({ where: { activityId: a.id, type: "reminder" } });
+    if (already > 0) continue;
+    await sendReminder(a.id, notifier);
+  }
+}
+
 export async function tick(now: Date) {
   try {
     await runAutoEnd(now);
-    // Plan C 追加：提醒发送；Plan D 追加：ASR 轮询（都放在此 try 内，保证调度循环不被单次异常打断）
+    await runReminders(now, larkNotifier);
+    // Plan D 追加：ASR 轮询（放在此 try 内，保证调度循环不被单次异常打断）
   } catch (err) {
     console.error("[scheduler] tick failed:", err);
   }

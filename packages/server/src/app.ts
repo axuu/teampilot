@@ -4,9 +4,10 @@ import cookieSession from "cookie-session";
 import { loadConfig } from "./config/index.js";
 import { authRouter } from "./auth/routes.js";
 import { membersRouter } from "./members/routes.js";
-import { activitiesRouter } from "./activities/routes.js";
+import { makeActivitiesRouter } from "./activities/routes.js";
 import { attendanceRouter } from "./attendance/routes.js";
 import { larkAuthClient, type FeishuAuthClient } from "./feishu/auth.js";
+import { larkNotifier, type FeishuNotifier } from "./feishu/notify.js";
 import { createJoinRouter } from "./members/join.js";
 
 declare global {
@@ -15,8 +16,9 @@ declare global {
   }
 }
 
-export function createApp(deps: { feishuAuth?: FeishuAuthClient } = {}) {
+export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: FeishuNotifier } = {}) {
   const feishuAuth = deps.feishuAuth ?? larkAuthClient;
+  const notifier = deps.notifier ?? larkNotifier;
   const config = loadConfig();
   const app = express();
   app.use(express.json({ limit: "1mb" }));
@@ -24,7 +26,7 @@ export function createApp(deps: { feishuAuth?: FeishuAuthClient } = {}) {
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/admin", authRouter);
   app.use("/api/admin/members", membersRouter);
-  app.use("/api/admin/activities", activitiesRouter);
+  app.use("/api/admin/activities", makeActivitiesRouter(notifier));
   app.use("/api/admin/activities", attendanceRouter);
   app.use("/api/h5", createJoinRouter(feishuAuth));
   app.use((err: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
