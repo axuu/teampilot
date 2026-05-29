@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { get, put, post } from "../../api.js";
 import { useToast } from "../../components/Toast.js";
 
@@ -13,6 +13,8 @@ export default function ReviewTab({ detail }: { detail: Detail }) {
   const toast = useToast();
   const [rawNotes, setRaw] = useState(""); const [aiSummary, setAi] = useState<string | null>(null);
   const [busy, setBusy] = useState(false); const [uploading, setUploading] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
   async function load() { const r = await get<any>(`/api/admin/activities/${detail.id}/review`); setRaw(r.rawNotes ?? ""); setAi(r.aiSummary ?? null); }
   useEffect(() => { void load(); }, [detail.id]);
   async function saveNotes() { await put(`/api/admin/activities/${detail.id}/review`, { rawNotes }); }
@@ -25,7 +27,16 @@ export default function ReviewTab({ detail }: { detail: Detail }) {
     setUploading(true); toast(`正在转写录音：${file.name}`);
     try {
       await fetch(`/api/admin/activities/${detail.id}/review/transcribe?filename=${encodeURIComponent(file.name)}`, { method: "POST", credentials: "include", body: file });
-      const poll = setInterval(async () => { const jobs = await get<any[]>(`/api/admin/activities/${detail.id}/review/jobs`); if (jobs.every(j => j.status !== "transcribing")) { clearInterval(poll); await load(); toast("转写完成"); setUploading(false); } }, 3000);
+      pollRef.current = setInterval(async () => {
+        try {
+          const jobs = await get<any[]>(`/api/admin/activities/${detail.id}/review/jobs`);
+          if (jobs.every(j => j.status !== "transcribing")) {
+            if (pollRef.current) clearInterval(pollRef.current);
+            pollRef.current = null;
+            await load(); toast("转写完成"); setUploading(false);
+          }
+        } catch { /* 本次轮询失败，下次再试 */ }
+      }, 3000);
     } catch { toast("上传失败"); setUploading(false); }
   }
   const summaryText = renderSummary(aiSummary);
