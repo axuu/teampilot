@@ -72,3 +72,30 @@ export function reviewStatus(a: { review: { rawNotes: string; aiSummary: string 
   if (!a.review || !a.review.rawNotes.trim()) return "无记录";
   return a.review.aiSummary ? "已生成" : "有素材未生成";
 }
+
+const HOUR_MS = 3600 * 1000;
+
+export function computeReminderAt(startTime: Date, now: Date): Date | null {
+  const msToStart = startTime.getTime() - now.getTime();
+  if (msToStart >= 24 * HOUR_MS) return new Date(startTime.getTime() - 24 * HOUR_MS);
+  if (msToStart >= 2 * HOUR_MS) return new Date(startTime.getTime() - 2 * HOUR_MS);
+  return null;
+}
+
+export async function publishActivity(id: string, now: Date) {
+  const act = await prisma.activity.findUnique({ where: { id } });
+  if (!act) throw new Error("not_found");
+  if (act.status !== "draft") throw new Error("only_draft_publishable");
+  // 阶段1：仅冻结快照 + 置状态 + 计算 reminderAt；发卡片/活动总结在 Plan C/D
+  return prisma.activity.update({
+    where: { id },
+    data: { status: "published", publishedAt: now, reminderAt: computeReminderAt(act.startTime, now) },
+  });
+}
+
+export async function cancelActivity(id: string, reason: string) {
+  const act = await prisma.activity.findUnique({ where: { id } });
+  if (!act) throw new Error("not_found");
+  if (act.status !== "draft" && act.status !== "published") throw new Error("not_cancellable");
+  return prisma.activity.update({ where: { id }, data: { status: "cancelled", cancelReason: reason } });
+}

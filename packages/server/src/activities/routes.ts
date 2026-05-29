@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireCaptain } from "../auth/middleware.js";
 import { zActivityDraft } from "./schema.js";
-import { createDraft, updateDraft, getActivity, listActivities, attendanceSummary, reviewStatus } from "./service.js";
+import { createDraft, updateDraft, getActivity, listActivities, attendanceSummary, reviewStatus, publishActivity, cancelActivity } from "./service.js";
 
 export const activitiesRouter = Router();
 activitiesRouter.use(requireCaptain);
@@ -39,5 +39,22 @@ activitiesRouter.put("/:id", async (req, res) => {
     }
     console.error("更新活动失败:", e);
     res.status(500).json({ error: "服务器错误" });
+  }
+});
+
+activitiesRouter.post("/:id/publish", async (req, res) => {
+  try {
+    res.json(await publishActivity(req.params.id, new Date()));
+  } catch (e) {
+    res.status(409).json({ error: (e as Error).message });
+  }
+});
+
+activitiesRouter.post("/:id/cancel", async (req, res) => {
+  const reason = typeof req.body?.reason === "string" ? req.body.reason : "";
+  try {
+    res.json(await cancelActivity(req.params.id, reason));
+  } catch (e) {
+    res.status(409).json({ error: (e as Error).message });
   }
 });
