@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth.js";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -12,6 +12,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <span className="font-bold">Levin 的球队</span>
         <div className="flex items-center gap-4 text-sm">
           <span>{me?.displayName}</span>
+          <Link to="/settings" className="text-gray-500">⚙ 设置</Link>
           <button onClick={() => void logout()} className="text-gray-500">退出登录</button>
         </div>
       </header>
@@ -19,6 +20,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <nav className="w-48 bg-white border-r p-2 space-y-1">
           {link("/members", "队员管理")}
           {link("/activities", "活动管理")}
+          {link("/assistant", "AI 队长助理")}
         </nav>
         <main className="flex-1 p-6">{children}</main>
       </div>
