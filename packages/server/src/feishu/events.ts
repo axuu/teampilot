@@ -41,9 +41,18 @@ export function startLongConnection(llm: LLMClient) {
       const openId = data?.sender?.sender_id?.open_id;
       if (!openId) return;
       const text = JSON.parse(data?.message?.content ?? "{}").text ?? "";
-      const answer = await answerMemberQuestion(openId, text, llm, new Date());
-      const client = createLarkClient();
-      await client.im.message.create({ params: { receive_id_type: "open_id" }, data: { receive_id: openId, msg_type: "text", content: JSON.stringify({ text: answer }) } });
+      if (!text) return; // 忽略非文本消息（图片/表情/文件）
+      try {
+        const answer = await answerMemberQuestion(openId, text, llm, new Date());
+        const client = createLarkClient();
+        await client.im.message.create({ params: { receive_id_type: "open_id" }, data: { receive_id: openId, msg_type: "text", content: JSON.stringify({ text: answer }) } });
+      } catch (e) {
+        console.error("[memberBot] 处理队员消息失败:", e);
+        try {
+          const client = createLarkClient();
+          await client.im.message.create({ params: { receive_id_type: "open_id" }, data: { receive_id: openId, msg_type: "text", content: JSON.stringify({ text: "出错了，请稍后再试。" }) } });
+        } catch { /* best-effort fallback */ }
+      }
     },
   });
   wsClient.start({ eventDispatcher: dispatcher });
