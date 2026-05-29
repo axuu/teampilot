@@ -1,0 +1,11 @@
+{
+  "name": "teampilot",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "dev:server": "pnpm --filter @teampilot/server dev"
+  }
+}
