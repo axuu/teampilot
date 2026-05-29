@@ -54,4 +54,16 @@ describe("activities draft", () => {
     const put = await agent.put(`/api/admin/activities/${res.body.id}`).send({ name: "改", type: "training", startTime: "2026-06-01T06:30:00.000Z" });
     expect(put.status).toBe(409);
   });
+  it("publishing a non-existent activity returns 404", async () => {
+    const agent = await login();
+    const res = await agent.post("/api/admin/activities/nope/publish");
+    expect(res.status).toBe(404);
+  });
+  it("re-publishing a published activity returns 409", async () => {
+    const agent = await login();
+    const a = await agent.post("/api/admin/activities").send({ name: "训练", type: "training", startTime: "2026-06-01T06:30:00.000Z" });
+    await agent.post(`/api/admin/activities/${a.body.id}/publish`);
+    const again = await agent.post(`/api/admin/activities/${a.body.id}/publish`);
+    expect(again.status).toBe(409);
+  });
 });

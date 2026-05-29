@@ -46,6 +46,7 @@ activitiesRouter.post("/:id/publish", async (req, res) => {
   try {
     res.json(await publishActivity(req.params.id, new Date()));
   } catch (e) {
+    if (e instanceof Error && e.message === "not_found") return res.status(404).json({ error: "活动不存在" });
     res.status(409).json({ error: (e as Error).message });
   }
 });
@@ -55,6 +56,7 @@ activitiesRouter.post("/:id/cancel", async (req, res) => {
   try {
     res.json(await cancelActivity(req.params.id, reason));
   } catch (e) {
+    if (e instanceof Error && e.message === "not_found") return res.status(404).json({ error: "活动不存在" });
     res.status(409).json({ error: (e as Error).message });
   }
 });
