@@ -17,12 +17,13 @@ export async function pollAsrJobs(provider: AsrProvider) {
     const r = await provider.queryResult(job.volcTaskId);
     if (r.failed) { await prisma.asrJob.update({ where: { id: job.id }, data: { status: "failed", failReason: r.reason ?? "转写失败" } }); continue; }
     if (!r.done) continue;
-    // 成功：拼接到 rawNotes 末尾（标题行 + 换行 + 正文）
-    const review = await prisma.activityReview.upsert({ where: { activityId: job.activityId }, update: {}, create: { activityId: job.activityId, rawNotes: "" } });
-    const block = `${review.rawNotes ? review.rawNotes + "\n\n" : ""}${job.fileName} 转写内容\n${r.text ?? ""}`;
-    await prisma.$transaction([
-      prisma.activityReview.update({ where: { activityId: job.activityId }, data: { rawNotes: block } }),
-      prisma.asrJob.update({ where: { id: job.id }, data: { status: "succeeded", transcript: r.text ?? "" } }),
-    ]);
+    // 原子追加：读 rawNotes、拼接、写回、置 succeeded 都在一个事务内，
+    // 避免事务失败后 job 仍 transcribing、下轮重复追加同一段转写。
+    await prisma.$transaction(async (tx) => {
+      const review = await tx.activityReview.upsert({ where: { activityId: job.activityId }, update: {}, create: { activityId: job.activityId, rawNotes: "" } });
+      const block = `${review.rawNotes ? review.rawNotes + "\n\n" : ""}${job.fileName} 转写内容\n${r.text ?? ""}`;
+      await tx.activityReview.update({ where: { activityId: job.activityId }, data: { rawNotes: block } });
+      await tx.asrJob.update({ where: { id: job.id }, data: { status: "succeeded", transcript: r.text ?? "" } });
+    });
   }
 }
