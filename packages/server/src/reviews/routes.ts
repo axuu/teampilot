@@ -24,8 +24,10 @@ export function makeReviewsRouter(llm: LLMClient) {
   });
 
   r.post("/:id/review/generate", async (req, res) => {
+    const review = await prisma.activityReview.findUnique({ where: { activityId: req.params.id } });
+    if (!review) return res.status(404).json({ error: "请先保存复盘记录" });
     try { res.json(await generateReviewSummary(req.params.id, llm, llm, new Date())); }
-    catch (e) { res.status(400).json({ error: (e as Error).message }); }
+    catch (e) { res.status(500).json({ error: (e as Error).message }); }
   });
 
   r.post("/:id/advice", async (req, res) => {
@@ -34,7 +36,7 @@ export function makeReviewsRouter(llm: LLMClient) {
     try {
       const out = act.type === "training" ? await generateTrainingAdvice(act.id, llm, new Date()) : await generateMatchAdvice(act.id, llm, new Date());
       res.json(out);
-    } catch (e) { res.status(400).json({ error: (e as Error).message }); }
+    } catch (e) { res.status(500).json({ error: (e as Error).message }); }
   });
 
   return r;

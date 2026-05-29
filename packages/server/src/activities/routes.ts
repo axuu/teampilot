@@ -56,7 +56,7 @@ export function makeActivitiesRouter(notifier: FeishuNotifier, llm: LLMClient) {
       return res.status(409).json({ error: (e as Error).message });
     }
     await notifyPublish(act.id, notifier); // 通知阶段异常交全局错误处理（500），不误判为发布失败
-    void generateActivitySummary(act.id, llm, new Date()).catch(() => {}); // 时机A：发布后异步生成活动总结，失败不阻塞发布
+    void generateActivitySummary(act.id, llm, new Date()).catch((e) => { console.error("[时机A] 活动总结生成失败:", e); }); // 发布后异步生成活动总结，失败不阻塞发布
     res.json(act);
   });
 
