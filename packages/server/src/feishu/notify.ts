@@ -1,6 +1,6 @@
 import { createLarkClient } from "./client.js";
 
-type Act = { id: string; name: string; type: string; startTime: Date; durationMinutes: number; location: string; theme: string | null; notes: string | null; cancelReason: string | null };
+export type Act = { id: string; name: string; type: string; startTime: Date; durationMinutes: number; location: string; theme: string | null; notes: string | null; cancelReason: string | null };
 
 const fmt = (d: Date) => d.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
 const typeLabel = (t: string) => (t === "training" ? "训练" : "比赛");

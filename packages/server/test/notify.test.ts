@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
-import { buildActivityCard, buildCancelCard, buildReminderCard } from "../src/feishu/notify.js";
+import { buildActivityCard, buildCancelCard, buildReminderCard, type Act } from "../src/feishu/notify.js";
 
-const act = { id: "a1", name: "周日训练", type: "training", startTime: new Date("2026-06-10T06:30:00Z"), durationMinutes: 120, location: "二操场", theme: "发球", notes: "带护具", cancelReason: "下雨" } as any;
+const act: Act = { id: "a1", name: "周日训练", type: "training", startTime: new Date("2026-06-10T06:30:00Z"), durationMinutes: 120, location: "二操场", theme: "发球", notes: "带护具", cancelReason: "下雨" };
 
 describe("card builders", () => {
   it("activity card has name, location and two action buttons carrying activityId", () => {
@@ -20,5 +20,14 @@ describe("card builders", () => {
   });
   it("reminder card mentions the activity", () => {
     expect(JSON.stringify(buildReminderCard(act))).toContain("周日训练");
+  });
+  it("activity card shows em-dash when theme and notes are null", () => {
+    const a: Act = { ...act, theme: null, notes: null };
+    const json = JSON.stringify(buildActivityCard(a));
+    expect(json).toContain("—");
+  });
+  it("match-type activity card header shows 比赛", () => {
+    const a: Act = { ...act, type: "match" };
+    expect(JSON.stringify(buildActivityCard(a))).toContain("比赛");
   });
 });
