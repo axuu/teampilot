@@ -6,7 +6,7 @@ import { createApp } from "../src/app.js";
 import request from "supertest";
 
 const sendCard = vi.fn().mockResolvedValue({ messageId: "m" });
-const app = createApp({ notifier: { sendCard } });
+const app = createApp({ notifier: { sendCard }, llm: { completeJSON: vi.fn().mockResolvedValue("{}") } });
 
 beforeEach(async () => { await resetDb(); await seed(); sendCard.mockClear(); });
 async function login() { const a = request.agent(app); await a.post("/api/admin/login").send({ username: "Levin", password: "change-me" }); return a; }
