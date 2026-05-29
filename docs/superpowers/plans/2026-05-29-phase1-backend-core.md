@@ -334,7 +334,18 @@ export default defineConfig({
   test: {
     globalSetup: ["./test/setup.ts"],
     fileParallelism: false,
-    env: { NODE_ENV: "test" },
+    env: {
+      NODE_ENV: "test",
+      DATABASE_URL: "file:./prisma/test.db",
+      CAPTAIN_USERNAME: "Levin",
+      CAPTAIN_PASSWORD: "change-me",
+      TEAM_DEFAULT_LOCATION: "测试场地",
+      TEAM_JOIN_TOKEN: "fixed-join-token-001",
+      SESSION_SECRET: "test-secret",
+      FEISHU_APP_ID: "test",
+      FEISHU_APP_SECRET: "test",
+      H5_BASE_URL: "http://localhost:5174",
+    },
   },
 });
 ```
@@ -1313,7 +1324,7 @@ export async function updateDraft(id: string, input: DraftInput) {
 }
 
 export function getActivity(id: string) {
-  return prisma.activity.findUnique({ where: { id }, include: { participants: true, review: true } });
+  return prisma.activity.findUnique({ where: { id }, include: { participants: { include: { member: true } }, review: true } });
 }
 
 export function listActivities(filter: { type?: string; status?: string }) {
@@ -1769,6 +1780,10 @@ git commit -m "chore(server): phase-1 backend regression green" || echo "nothing
 - **测试隔离**：`vitest.config.ts` 设 `fileParallelism:false`，配合 `beforeEach(resetDb)` 避免共享 SQLite 串扰。
 - **飞书 SDK 方法名**：Task 6 的 `authen.accessToken.create` 以实际安装版本为准；封装在 `larkAuthClient` 内，变化不影响业务与测试。
 - **阶段边界**：本计划 publish 不发飞书卡片、不生成 AI 总结（Plan C/D 负责）；reminderAt 已算好，提醒发送在 Plan C。
+- **测试环境变量**：`vitest.config.ts` 的 `test.env` 提供 DATABASE_URL 与 loadConfig 所需全部变量（worker 进程可见，否则 seed/loadConfig 会因缺变量抛错）；`test/setup.ts` 自身也设置 DATABASE_URL 供 globalSetup 的 `db push` 使用。两者指向同一 test.db。
+- **Prisma 生成**：首次跑测试前需 `prisma generate`（Task 4 Step 2 已含）；CI 可加 `pretest` 钩子确保已生成。
+- **shared 包生产打包**：`@teampilot/shared` 的 `main` 指向 `src/index.ts`，dev/test 由 tsx/vitest 直接解析 TS。**生产用 tsx 启动 server**（`node dist` 不能解析跨包 TS 源）；若坚持 `node dist`，需让 shared 输出 dist 并改 exports，或用 bundler 打包 server。MVP 单实例用 tsx 即可。
+- **cookie-session 类型**：`app.ts` 给 `req.session` 挂 `captainId` 的 `declare global` 是运行期可用的类型补丁；删除无用的 `declare module "express-session"` 行，TS 若仍报错可临时 `(req.session as any).captainId`。
 - **依赖根 CLAUDE.md**：先写失败测试再实现；改动只服务当前任务；不顺手重构无关代码。
 
 ---

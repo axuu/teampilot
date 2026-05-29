@@ -55,7 +55,7 @@ packages/
   "type": "module",
   "scripts": {
     "dev": "vite --port 5173",
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "test": "vitest run"
   },
   "dependencies": {
@@ -658,6 +658,7 @@ describe("ActivityForm", () => {
     await userEvent.type(screen.getByLabelText("活动名称"), "周日训练");
     await userEvent.click(screen.getByLabelText("类型-训练"));
     await userEvent.type(screen.getByLabelText("开始时间"), "2026-06-01T14:30");
+    await userEvent.type(screen.getByLabelText("活动地点"), "二操场"); // 必填：否则 requiredOk=false，确认弹框不会出现
     await userEvent.click(screen.getByRole("button", { name: "发布" }));
     expect(await screen.findByText("是否要发布活动？")).toBeInTheDocument();
   });
@@ -929,7 +930,7 @@ git commit -m "feat(web-admin): activity detail (summary + attendance tabs + act
   "name": "@teampilot/web-h5",
   "private": true,
   "type": "module",
-  "scripts": { "dev": "vite --port 5174", "build": "tsc -b && vite build", "test": "vitest run" },
+  "scripts": { "dev": "vite --port 5174", "build": "tsc --noEmit && vite build", "test": "vitest run" },
   "dependencies": { "@teampilot/shared": "workspace:*", "react": "^19.0.0", "react-dom": "^19.0.0" },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.0", "@testing-library/react": "^16.1.0", "@testing-library/user-event": "^14.5.0",
