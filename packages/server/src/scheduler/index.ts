@@ -23,6 +23,7 @@ export async function runReminders(now: Date, notifier: FeishuNotifier) {
     where: { status: "published", reminderAt: { not: null, lte: now } },
   });
   for (const a of due) {
+    // 幂等：sendReminder 即使失败也会写日志，故 >0 表示本活动已尝试过提醒（失败补发走概要 Tab 手动重试）
     const already = await prisma.notificationLog.count({ where: { activityId: a.id, type: "reminder" } });
     if (already > 0) continue;
     await sendReminder(a.id, notifier);
