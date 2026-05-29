@@ -12,6 +12,7 @@ import { createJoinRouter } from "./members/join.js";
 import { settingsRouter } from "./settings/routes.js";
 import { arkClient, type LLMClient } from "./ai/client.js";
 import { makeReviewsRouter } from "./reviews/routes.js";
+import { makeAssistantRouter } from "./assistant/routes.js";
 
 declare global {
   namespace Express {
@@ -34,6 +35,7 @@ export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: Feis
   app.use("/api/admin/activities", attendanceRouter);
   app.use("/api/admin/activities", makeReviewsRouter(llm));
   app.use("/api/admin/settings", settingsRouter);
+  app.use("/api/admin/assistant", makeAssistantRouter(llm));
   app.use("/api/h5", createJoinRouter(feishuAuth));
   app.use((err: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
     console.error("未处理错误:", err);
