@@ -12,7 +12,7 @@ async function sendOne(notifier: FeishuNotifier, activityId: string, memberId: s
     const { messageId } = await notifier.sendCard(openId, card);
     await prisma.notificationLog.update({ where: { id: log.id }, data: { status: "success", feishuMessageId: messageId, sentAt: new Date() } });
   } catch (e) {
-    await prisma.notificationLog.update({ where: { id: log.id }, data: { status: "failed", failReason: (e as Error).message } });
+    await prisma.notificationLog.update({ where: { id: log.id }, data: { status: "failed", failReason: (e instanceof Error ? e.message : String(e)) } });
   }
 }
 
@@ -43,7 +43,7 @@ export async function sendReminder(activityId: string, notifier: FeishuNotifier)
   }
 }
 
-// 只补发失败对象（同 activity、同 type 的最新一条 failed）
+// 补发当前 activity 下所有 failed 条目（正常每个 member×type 至多一条 failed）
 export async function retryFailed(activityId: string, notifier: FeishuNotifier) {
   const failed = await prisma.notificationLog.findMany({ where: { activityId, status: "failed" }, include: { activity: true } });
   for (const log of failed) {
@@ -54,12 +54,15 @@ export async function retryFailed(activityId: string, notifier: FeishuNotifier) 
       const { messageId } = await notifier.sendCard(member.feishuOpenId, card);
       await prisma.notificationLog.update({ where: { id: log.id }, data: { status: "success", feishuMessageId: messageId, sentAt: new Date(), failReason: null } });
     } catch (e) {
-      await prisma.notificationLog.update({ where: { id: log.id }, data: { failReason: (e as Error).message } });
+      await prisma.notificationLog.update({ where: { id: log.id }, data: { failReason: (e instanceof Error ? e.message : String(e)) } });
     }
   }
 }
 
 export async function notificationStatus(activityId: string) {
   const logs = await prisma.notificationLog.findMany({ where: { activityId } });
-  return { success: logs.filter(l=>l.status==="success").length, failed: logs.filter(l=>l.status==="failed").length };
+  return {
+    success: logs.filter((l) => l.status === "success").length,
+    failed: logs.filter((l) => l.status === "failed").length,
+  };
 }
