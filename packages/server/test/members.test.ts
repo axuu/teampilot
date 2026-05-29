@@ -44,4 +44,9 @@ describe("members", () => {
     const bad = await agent.put(`/api/admin/members/${m.id}`).send({ name: "x", primaryPosition: "feeder", status: "active", captainNote: "y".repeat(101) });
     expect(bad.status).toBe(400);
   });
+  it("returns 404 when updating a non-existent member", async () => {
+    const agent = await login();
+    const res = await agent.put("/api/admin/members/nonexistent-id").send({ name: "X", primaryPosition: "tekong", status: "active" });
+    expect(res.status).toBe(404);
+  });
 });

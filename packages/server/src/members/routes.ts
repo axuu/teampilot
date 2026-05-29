@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { requireCaptain } from "../auth/middleware.js";
 import { listMembers, updateMember } from "./service.js";
 import { zMemberUpdate } from "./schema.js";
@@ -16,7 +17,11 @@ membersRouter.put("/:id", async (req, res) => {
   if (!parsed.success) return res.status(400).json({ error: "字段校验失败", issues: parsed.error.issues });
   try {
     res.json(await updateMember(req.params.id, parsed.data));
-  } catch {
-    res.status(404).json({ error: "队员不存在" });
+  } catch (e) {
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2025") {
+      return res.status(404).json({ error: "队员不存在" });
+    }
+    console.error("更新队员失败:", e);
+    res.status(500).json({ error: "服务器错误" });
   }
 });
