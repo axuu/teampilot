@@ -34,6 +34,10 @@ activitiesRouter.put("/:id", async (req, res) => {
     if (!a) return res.status(404).json({ error: "活动不存在" });
     res.json(a);
   } catch (e) {
-    res.status(409).json({ error: "已发布活动不可编辑" });
+    if (e instanceof Error && e.message === "only_draft_editable") {
+      return res.status(409).json({ error: "已发布活动不可编辑" });
+    }
+    console.error("更新活动失败:", e);
+    res.status(500).json({ error: "服务器错误" });
   }
 });

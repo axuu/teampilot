@@ -36,8 +36,10 @@ export async function updateDraft(id: string, input: DraftInput) {
     },
   });
   if (input.participantIds) {
-    await prisma.activityParticipant.deleteMany({ where: { activityId: id } });
-    await prisma.activityParticipant.createMany({ data: input.participantIds.map((memberId) => ({ activityId: id, memberId })) });
+    await prisma.$transaction([
+      prisma.activityParticipant.deleteMany({ where: { activityId: id } }),
+      prisma.activityParticipant.createMany({ data: input.participantIds.map((memberId) => ({ activityId: id, memberId })) }),
+    ]);
   }
   return prisma.activity.findUnique({ where: { id } });
 }

@@ -47,4 +47,11 @@ describe("activities draft", () => {
     expect(detail.body.participants.length).toBe(1);
     expect(detail.body.participants[0].memberId).toBe(a.id);
   });
+  it("rejects editing a non-draft activity with 409", async () => {
+    const agent = await login();
+    const res = await agent.post("/api/admin/activities").send({ name: "训练", type: "training", startTime: "2026-06-01T06:30:00.000Z" });
+    await prisma.activity.update({ where: { id: res.body.id }, data: { status: "published" } });
+    const put = await agent.put(`/api/admin/activities/${res.body.id}`).send({ name: "改", type: "training", startTime: "2026-06-01T06:30:00.000Z" });
+    expect(put.status).toBe(409);
+  });
 });
