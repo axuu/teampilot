@@ -6,7 +6,10 @@ export default function Settings() {
   const toast = useToast();
   const [trainingRules, setT] = useState(""); const [matchRules, setM] = useState("");
   useEffect(() => { void get<any>("/api/admin/settings").then((s)=>{ setT(s.trainingRules); setM(s.matchRules); }); }, []);
-  async function save() { await put("/api/admin/settings", { trainingRules, matchRules }); toast("已保存"); }
+  async function save() {
+    try { await put("/api/admin/settings", { trainingRules, matchRules }); toast("已保存"); }
+    catch { toast("保存失败，请重试"); }
+  }
   return (
     <div className="max-w-2xl space-y-6">
       <h1 className="text-xl font-bold">设置</h1>
