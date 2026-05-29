@@ -24,6 +24,17 @@ describe("ActivityForm", () => {
     renderNew();
     expect(await screen.findByLabelText("参加-甲")).toBeChecked();
   });
+  it("loads existing activity into the form in edit mode", async () => {
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url) => {
+      const u = String(url);
+      if (u.includes("/api/admin/members")) return { ok:true, status:200, json: async()=>activeMembers } as Response;
+      if (/\/api\/admin\/activities\/a1$/.test(u)) return { ok:true, status:200, json: async()=>({ id:"a1", name:"已存训练", type:"training", startTime:"2026-06-01T06:30:00.000Z", durationMinutes:90, location:"老地点", theme:null, notes:null, participants:[{ memberId:"m1" }] }) } as Response;
+      return { ok:true, status:200, json: async()=>({}) } as Response;
+    });
+    render(<ToastProvider><MemoryRouter initialEntries={["/activities/a1/edit"]}><Routes><Route path="/activities/:id/edit" element={<ActivityForm />} /></Routes></MemoryRouter></ToastProvider>);
+    expect(await screen.findByDisplayValue("已存训练")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("老地点")).toBeInTheDocument();
+  });
   it("publish opens confirm dialog requiring required fields", async () => {
     renderNew();
     await userEvent.type(screen.getByLabelText("活动名称"), "周日训练");

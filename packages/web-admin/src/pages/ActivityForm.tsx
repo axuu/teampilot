@@ -6,6 +6,12 @@ import { useToast } from "../components/Toast.js";
 
 type Member = { id:string; name:string; jerseyNumber:string|null; primaryPosition:string; backupPosition:string|null; level:string|null; style:string|null; status:string };
 
+function toLocalInput(iso: string) {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function ActivityForm() {
   const { id } = useParams(); const nav = useNavigate(); const toast = useToast();
   const [name,setName]=useState(""); const [type,setType]=useState(""); const [startTime,setStart]=useState("");
@@ -16,6 +22,14 @@ export default function ActivityForm() {
   useEffect(() => {
     void get<Member[]>("/api/admin/members?status=active").then((ms)=>{ setMembers(ms); if(!id) setSelected(new Set(ms.map(m=>m.id))); });
     void get<any>("/api/admin/settings").then((s)=>{ if(!id && s?.defaultLocation) setLocation(s.defaultLocation); }).catch(()=>{});
+    if (id) {
+      void get<any>(`/api/admin/activities/${id}`).then((a) => {
+        setName(a.name); setType(a.type); setStart(toLocalInput(a.startTime));
+        setDuration(a.durationMinutes); setLocation(a.location);
+        setTheme(a.theme ?? ""); setNotes(a.notes ?? "");
+        setSelected(new Set((a.participants ?? []).map((p: any) => p.memberId)));
+      }).catch(()=>{});
+    }
   }, [id]);
 
   const payload = () => ({ name, type, startTime: startTime ? new Date(startTime).toISOString() : "", durationMinutes: duration, location, theme: theme||undefined, notes: notes||undefined, participantIds: [...selected] });
@@ -23,13 +37,17 @@ export default function ActivityForm() {
   const past = startTime && new Date(startTime).getTime() < Date.now();
 
   async function saveDraft() {
-    const res = id ? await put<any>(`/api/admin/activities/${id}`, payload()) : await post<any>("/api/admin/activities", payload());
-    toast("已保存草稿"); nav(`/activities/${id ?? res.id}`);
+    try {
+      const res = id ? await put<any>(`/api/admin/activities/${id}`, payload()) : await post<any>("/api/admin/activities", payload());
+      toast("已保存草稿"); nav(`/activities/${id ?? res.id}`);
+    } catch { setErr("保存失败，请重试"); }
   }
   async function doPublish() {
-    const res = id ? { id } : await post<any>("/api/admin/activities", payload());
-    await post(`/api/admin/activities/${res.id}/publish`);
-    setConfirm(false); nav(`/activities/${res.id}`);
+    try {
+      const res = id ? { id } : await post<any>("/api/admin/activities", payload());
+      await post(`/api/admin/activities/${res.id}/publish`);
+      setConfirm(false); nav(`/activities/${res.id}`);
+    } catch { setConfirm(false); setErr("发布失败，请重试"); }
   }
   function onPublishClick() { if(!requiredOk){ setErr("请填写所有必填项"); return; } setErr(""); setConfirm(true); }
 
