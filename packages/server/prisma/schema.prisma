@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Captain {
+  id           String @id @default(cuid())
+  username     String @unique
+  passwordHash String
+  displayName  String
+}
+
+model TeamSettings {
+  id              String @id @default("singleton")
+  defaultLocation String
+  trainingRules   String @default("")
+  matchRules      String @default("")
+}
+
+model Member {
+  id              String   @id @default(cuid())
+  name            String
+  jerseyNumber    String?
+  primaryPosition String
+  backupPosition  String?
+  level           String?
+  style           String?
+  status          String   @default("active")
+  captainNote     String?
+  feishuOpenId    String   @unique
+  createdAt       DateTime @default(now())
+  participants    ActivityParticipant[]
+}
+
+model Activity {
+  id               String    @id @default(cuid())
+  name             String
+  type             String
+  startTime        DateTime
+  durationMinutes  Int       @default(120)
+  location         String
+  theme            String?
+  notes            String?
+  status           String    @default("draft")
+  cancelReason     String?
+  summary          String?
+  summaryStage     String    @default("none")
+  summaryUpdatedAt DateTime?
+  reminderAt       DateTime?
+  publishedAt      DateTime?
+  endedAt          DateTime?
+  createdAt        DateTime  @default(now())
+  participants     ActivityParticipant[]
+  review           ActivityReview?
+  asrJobs          AsrJob[]
+  notifications    NotificationLog[]
+}
+
+model ActivityParticipant {
+  id                 String    @id @default(cuid())
+  activityId         String
+  memberId           String
+  attendanceResponse String    @default("no_response")
+  responseUpdatedAt  DateTime?
+  actualAttendance   String?
+  activity           Activity  @relation(fields: [activityId], references: [id])
+  member             Member    @relation(fields: [memberId], references: [id])
+
+  @@unique([activityId, memberId])
+}
+
+model ActivityReview {
+  activityId         String    @id
+  rawNotes           String    @default("")
+  aiSummary          String?
+  aiSummaryUpdatedAt DateTime?
+  activity           Activity  @relation(fields: [activityId], references: [id])
+}
+
+model AsrJob {
+  id         String   @id @default(cuid())
+  activityId String
+  fileName   String
+  tosUrl     String
+  volcTaskId String?
+  status     String   @default("uploading")
+  failReason String?
+  transcript String?
+  createdAt  DateTime @default(now())
+  activity   Activity @relation(fields: [activityId], references: [id])
+}
+
+model NotificationLog {
+  id              String    @id @default(cuid())
+  activityId      String
+  memberId        String
+  type            String
+  status          String    @default("pending")
+  failReason      String?
+  feishuMessageId String?
+  createdAt       DateTime  @default(now())
+  sentAt          DateTime?
+  activity        Activity  @relation(fields: [activityId], references: [id])
+
+  @@index([activityId, type, status])
+}
+
+model AssistantMessage {
+  id        String   @id @default(cuid())
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+}
