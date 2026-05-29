@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import request from "supertest";
 import { createApp } from "../src/app.js";
 import { resetDb } from "./helpers/db.js";
@@ -48,5 +48,12 @@ describe("members", () => {
     const agent = await login();
     const res = await agent.put("/api/admin/members/nonexistent-id").send({ name: "X", primaryPosition: "tekong", status: "active" });
     expect(res.status).toBe(404);
+  });
+  it("returns 500 (not a hang) when the DB errors on list", async () => {
+    const spy = vi.spyOn(prisma.member, "findMany").mockRejectedValueOnce(new Error("db down"));
+    const agent = await login();
+    const res = await agent.get("/api/admin/members");
+    expect(res.status).toBe(500);
+    spy.mockRestore();
   });
 });

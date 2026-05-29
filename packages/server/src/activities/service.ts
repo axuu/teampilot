@@ -1,4 +1,5 @@
 import { prisma } from "../db/client.js";
+import { Prisma } from "@prisma/client";
 import type { z } from "zod";
 import type { zActivityDraft } from "./schema.js";
 
@@ -27,20 +28,23 @@ export async function updateDraft(id: string, input: DraftInput) {
   const act = await prisma.activity.findUnique({ where: { id } });
   if (!act) return null;
   if (act.status !== "draft") throw new Error("only_draft_editable");
-  await prisma.activity.update({
-    where: { id },
-    data: {
-      name: input.name, type: input.type, startTime: new Date(input.startTime),
-      durationMinutes: input.durationMinutes ?? act.durationMinutes,
-      location: input.location ?? act.location, theme: input.theme, notes: input.notes,
-    },
-  });
+  const ops: Prisma.PrismaPromise<unknown>[] = [
+    prisma.activity.update({
+      where: { id },
+      data: {
+        name: input.name, type: input.type, startTime: new Date(input.startTime),
+        durationMinutes: input.durationMinutes ?? act.durationMinutes,
+        location: input.location ?? act.location, theme: input.theme, notes: input.notes,
+      },
+    }),
+  ];
   if (input.participantIds) {
-    await prisma.$transaction([
+    ops.push(
       prisma.activityParticipant.deleteMany({ where: { activityId: id } }),
       prisma.activityParticipant.createMany({ data: input.participantIds.map((memberId) => ({ activityId: id, memberId })) }),
-    ]);
+    );
   }
+  await prisma.$transaction(ops);
   return prisma.activity.findUnique({ where: { id } });
 }
 

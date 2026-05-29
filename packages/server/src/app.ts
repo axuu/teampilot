@@ -1,3 +1,4 @@
+import "express-async-errors";
 import express from "express";
 import cookieSession from "cookie-session";
 import { loadConfig } from "./config/index.js";
@@ -19,12 +20,16 @@ export function createApp(deps: { feishuAuth?: FeishuAuthClient } = {}) {
   const config = loadConfig();
   const app = express();
   app.use(express.json({ limit: "1mb" }));
-  app.use(cookieSession({ name: "tp", secret: config.sessionSecret, httpOnly: true, sameSite: "lax", maxAge: 7 * 24 * 3600 * 1000, secureProxy: process.env.NODE_ENV === "production" }));
+  app.use(cookieSession({ name: "tp", secret: config.sessionSecret, httpOnly: true, sameSite: "lax", maxAge: 7 * 24 * 3600 * 1000, secure: process.env.NODE_ENV === "production" }));
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/admin", authRouter);
   app.use("/api/admin/members", membersRouter);
   app.use("/api/admin/activities", activitiesRouter);
   app.use("/api/admin/activities", attendanceRouter);
   app.use("/api/h5", createJoinRouter(feishuAuth));
+  app.use((err: unknown, _req: import("express").Request, res: import("express").Response, _next: import("express").NextFunction) => {
+    console.error("未处理错误:", err);
+    res.status(500).json({ error: "服务器错误" });
+  });
   return app;
 }
