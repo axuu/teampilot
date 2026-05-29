@@ -21,4 +21,20 @@ describe("publish triggers notifications", () => {
     const status = await agent.get(`/api/admin/activities/${a.body.id}/notifications`);
     expect(status.body.success).toBe(1);
   });
+
+  it("retry endpoint resends only the failed notification", async () => {
+    await prisma.member.create({ data: { name: "A", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_A" } });
+    await prisma.member.create({ data: { name: "B", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_B" } });
+    const agent = await login();
+    const a = await agent.post("/api/admin/activities").send({ name: "训练", type: "training", startTime: new Date(Date.now()+86400000).toISOString() });
+    // first publish: A succeeds, B fails
+    sendCard.mockResolvedValueOnce({ messageId: "ok" }).mockRejectedValueOnce(new Error("boom"));
+    await agent.post(`/api/admin/activities/${a.body.id}/publish`);
+    const before = await agent.get(`/api/admin/activities/${a.body.id}/notifications`);
+    expect(before.body).toEqual({ success: 1, failed: 1 });
+    // retry: resend only the failed one (B)
+    sendCard.mockResolvedValue({ messageId: "ok2" });
+    const after = await agent.post(`/api/admin/activities/${a.body.id}/notifications/retry`);
+    expect(after.body).toEqual({ success: 2, failed: 0 });
+  });
 });

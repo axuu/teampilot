@@ -46,30 +46,35 @@ export function makeActivitiesRouter(notifier: FeishuNotifier) {
   });
 
   r.post("/:id/publish", async (req, res) => {
+    let act;
     try {
-      const act = await publishActivity(req.params.id, new Date());
-      await notifyPublish(act.id, notifier); // 发布后给 active 参与者发卡片（设计 F12 本计划用 await 保证日志落库）
-      res.json(act);
+      act = await publishActivity(req.params.id, new Date());
     } catch (e) {
       if (e instanceof Error && e.message === "not_found") return res.status(404).json({ error: "活动不存在" });
-      res.status(409).json({ error: (e as Error).message });
+      return res.status(409).json({ error: (e as Error).message });
     }
+    await notifyPublish(act.id, notifier); // 通知阶段异常交全局错误处理（500），不误判为发布失败
+    res.json(act);
   });
 
   r.post("/:id/cancel", async (req, res) => {
     const reason = typeof req.body?.reason === "string" ? req.body.reason : "";
+    let act;
     try {
-      const act = await cancelActivity(req.params.id, reason);
-      await notifyCancel(act.id, notifier);
-      res.json(act);
+      act = await cancelActivity(req.params.id, reason);
     } catch (e) {
       if (e instanceof Error && e.message === "not_found") return res.status(404).json({ error: "活动不存在" });
-      res.status(409).json({ error: (e as Error).message });
+      return res.status(409).json({ error: (e as Error).message });
     }
+    await notifyCancel(act.id, notifier);
+    res.json(act);
   });
 
   r.get("/:id/notifications", async (req, res) => res.json(await notificationStatus(req.params.id)));
-  r.post("/:id/notifications/retry", async (req, res) => { await retryFailed(req.params.id, notifier); res.json(await notificationStatus(req.params.id)); });
+  r.post("/:id/notifications/retry", async (req, res) => {
+    await retryFailed(req.params.id, notifier);
+    res.json(await notificationStatus(req.params.id));
+  });
 
   return r;
 }
