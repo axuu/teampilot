@@ -28,4 +28,11 @@ describe("attendance marking", () => {
     const res = await agent.post(`/api/admin/activities/x/participants/y/attendance`).send({ value: "maybe" });
     expect(res.status).toBe(400);
   });
+  it("rejects marking attendance on a non-ended activity with 409", async () => {
+    const m = await prisma.member.create({ data: { name: "B", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_B" } });
+    const act = await prisma.activity.create({ data: { name: "训练", type: "training", startTime: new Date(), location: "x", status: "published", participants: { create: [{ memberId: m.id }] } } });
+    const agent = await login();
+    const res = await agent.post(`/api/admin/activities/${act.id}/participants/${m.id}/attendance`).send({ value: "present" });
+    expect(res.status).toBe(409);
+  });
 });

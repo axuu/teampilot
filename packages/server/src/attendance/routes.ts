@@ -10,6 +10,9 @@ attendanceRouter.use(requireCaptain);
 attendanceRouter.post("/:activityId/participants/:memberId/attendance", async (req, res) => {
   const parsed = zMark.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "无效的到场值" });
+  const activity = await prisma.activity.findUnique({ where: { id: req.params.activityId } });
+  if (!activity) return res.status(404).json({ error: "活动不存在" });
+  if (activity.status !== "ended") return res.status(409).json({ error: "仅可标记已结束活动的到场" });
   const result = await prisma.activityParticipant.updateMany({
     where: { activityId: req.params.activityId, memberId: req.params.memberId },
     data: { actualAttendance: parsed.data.value },
