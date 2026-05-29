@@ -17,8 +17,12 @@ export async function runAutoEnd(now: Date) {
 }
 
 export async function tick(now: Date) {
-  await runAutoEnd(now);
-  // Plan C 追加：提醒发送；Plan D 追加：ASR 轮询
+  try {
+    await runAutoEnd(now);
+    // Plan C 追加：提醒发送；Plan D 追加：ASR 轮询（都放在此 try 内，保证调度循环不被单次异常打断）
+  } catch (err) {
+    console.error("[scheduler] tick failed:", err);
+  }
 }
 
 export function startScheduler() {
