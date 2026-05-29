@@ -14,7 +14,7 @@ settingsRouter.get("/", async (_req, res) => {
 
 settingsRouter.put("/", async (req, res) => {
   const parsed = zRules.safeParse(req.body);
-  if (!parsed.success) return res.status(400).json({ error: "字段校验失败" });
+  if (!parsed.success) return res.status(400).json({ error: "字段校验失败", issues: parsed.error.issues });
   await prisma.teamSettings.update({ where: { id: "singleton" }, data: parsed.data });
   res.json({ ok: true });
 });
