@@ -7,6 +7,7 @@ export interface LLMClient {
 
 export const arkClient: LLMClient = {
   async completeJSON(system, user) {
+    if (process.env.NODE_ENV === "test") throw new Error("arkClient 不应在测试中被调用，请为该路径注入假的 LLMClient");
     const client = new OpenAI({ apiKey: process.env.ARK_API_KEY!, baseURL: process.env.ARK_BASE_URL });
     const resp = await client.chat.completions.create({
       model: process.env.ARK_MODEL!,

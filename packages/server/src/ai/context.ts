@@ -36,5 +36,5 @@ export function memberLine(m: { name: string; primaryPosition: string; backupPos
 
 export function historyBlock(items: HistorySummary[]) {
   if (items.length === 0) return "暂无历史摘要";
-  return items.map((i) => `- ${i.date.toLocaleDateString("zh-CN")} ${i.name}（${i.type === "training" ? "训练" : "比赛"}）：${i.content}`).join("\n");
+  return items.map((i) => `- ${i.date.toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai" })} ${i.name}（${i.type === "training" ? "训练" : "比赛"}）：${i.content}`).join("\n");
 }

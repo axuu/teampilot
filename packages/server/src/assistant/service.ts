@@ -14,7 +14,7 @@ export async function ask(question: string, llm: LLMClient, now: Date) {
   const members = await activeMembersForAI();
   const summaries = await recentSummaries(now);
   const recentActs = await prisma.activity.findMany({ where: { status: { in: ["published","ended"] }, startTime: { gte: new Date(now.getTime()-60*86400000) } }, include: { participants: true }, orderBy: { startTime: "desc" }, take: 8 });
-  const attendance = recentActs.map((a)=>{ const g=a.participants.filter(p=>p.attendanceResponse==="going").length; const n=a.participants.filter(p=>p.attendanceResponse==="not_going").length; const u=a.participants.filter(p=>p.attendanceResponse==="no_response").length; return `${a.startTime.toLocaleDateString("zh-CN")} ${a.name}：去${g}/不去${n}/未反馈${u}`; }).join("\n");
+  const attendance = recentActs.map((a)=>{ const g=a.participants.filter(p=>p.attendanceResponse==="going").length; const n=a.participants.filter(p=>p.attendanceResponse==="not_going").length; const u=a.participants.filter(p=>p.attendanceResponse==="no_response").length; return `${a.startTime.toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai" })} ${a.name}：去${g}/不去${n}/未反馈${u}`; }).join("\n");
   const system = "你是队长的内部分析助理。只引用系统中真实数据，数据不足要明说，不编造。输出 JSON：{judgment(50-300字), basis(50-200字)}。";
   const convo = history.map((m)=>`${m.role==="ai"?"AI":"我"}：${m.content}`).join("\n");
   const user = `【对话上下文(10分钟内)】\n${convo || "（新会话）"}\n【当前问题】${question}\n【全部正常队员】\n${members.map((m)=>memberLine(m)).join("\n")}\n【近2月活动摘要】\n${historyBlock(summaries)}\n【近2月出勤概况】\n${attendance || "（无）"}`;
