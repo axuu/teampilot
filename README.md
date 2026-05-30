@@ -87,6 +87,24 @@ cd packages/server
 > 单测**零网络**：LLM/ASR/飞书全部走可注入接口 + 假实现；外部 SDK 适配层靠真机验收。
 > `arkClient`/`volcAsrProvider` 带 `NODE_ENV==="test"` 守卫，测试中绝不会发真实调用。
 
+### 5) 端到端测试（e2e）
+
+`packages/e2e` 使用 **Playwright** 对 web-admin 跑完整浏览器流程：真实 Express server（飞书 / 方舟 LLM / 火山 ASR 均由确定性假实现替代）+ web-admin `vite preview` 构建产物 + 隔离的 e2e SQLite 数据库。
+
+**覆盖范围**：登录 → 建活动（校验默认值）→ 选参与人 → 发布 → 通知状态 → 复盘填写/上传录音转写 → 生成 AI 复盘概要 / 训练建议，全程断言 UI 渲染了真实后端返回的数据。
+
+**不覆盖**：真实飞书 / 方舟 / 火山外部服务；web-h5 队员加入流程；非 happy-path 分支（由 server API 集成测试与 web 组件测试覆盖）。
+
+**运行方式**：
+
+```bash
+# 首次：安装 Chromium
+pnpm --filter @teampilot/e2e exec playwright install chromium
+
+# 跑 e2e（自动启动 :3000 e2e server 和 :5173 web-admin preview）
+pnpm e2e
+```
+
 ---
 
 ## 关键约定
