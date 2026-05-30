@@ -41,7 +41,7 @@ test("队长后台核心 happy path：登录→建活动→选参与人→发布
   await expect(page.getByRole("heading", { name: "e2e 周日训练" })).toBeVisible();
 
   // 5) 活动概要 Tab（默认）：通知状态 = 成功 2 / 失败 0
-  const notifBlock = page.locator("div").filter({ hasText: "通知状态" }).last();
+  const notifBlock = page.getByText("通知状态：").locator(".."); // 锚定到 "通知状态：" span 的父 div，比 .last() 稳健
   await expect(notifBlock).toContainText("成功 2 / 失败 0");
 
   // 5b) 概要页 AI 按钮：生成训练建议（走 fakeLLM 训练助理分支）
@@ -51,6 +51,7 @@ test("队长后台核心 happy path：登录→建活动→选参与人→发布
   // 6) 活动复盘 Tab
   await page.getByRole("button", { name: "活动复盘" }).click();
   const notes = page.getByRole("textbox");
+  await expect(notes).toHaveValue(""); // 等复盘初始 GET 加载完成（新活动暂无复盘记录，应为空），避免 setRaw 覆盖刚填入的文本
   await notes.fill("队员状态不错，配合默契。");
   // onBlur 触发 PUT 保存。必须等保存完成再上传，否则与转写的「读-改-写」存在竞态：
   // 后置落地的 PUT 可能覆盖掉转写文本，导致 toHaveValue 偶发失败。用 waitForResponse 同步。
