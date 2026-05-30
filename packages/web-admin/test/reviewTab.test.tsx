@@ -11,7 +11,7 @@ beforeEach(() => {
     const u = String(url);
     if (u.endsWith("/review") && (!init || init.method!=="PUT")) return { ok:true, status:200, json: async()=>({ rawNotes:"今天发球不错", aiSummary:null }) } as Response;
     if (u.endsWith("/review/generate")) return { ok:true, status:200, json: async()=>({ overall:"整体不错", goalDone:"达成", problems:"无", improvements:"继续" }) } as Response;
-    if (u.endsWith("/review/jobs")) return { ok:true, status:200, json: async()=>[] } as Response;
+    if (u.includes("/review/transcribe")) return { ok:true, status:200, json: async()=>({ text:"转写文本" }) } as Response;
     return { ok:true, status:200, json: async()=>({}) } as Response;
   });
 });

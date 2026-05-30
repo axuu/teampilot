@@ -1,29 +1,22 @@
 import { prisma } from "../db/client.js";
 import type { AsrProvider } from "./provider.js";
 
-const ALLOWED = ["mp3", "wav", "m4a"];
+const ALLOWED = ["mp3", "wav", "ogg", "m4a"];
 
-export async function createAsrJob(activityId: string, fileName: string, bytes: Buffer, provider: AsrProvider) {
+// 同步转写一个上传的音频文件，并把转写文本追加到该活动的复盘记录(rawNotes)。返回转写文本。
+export async function transcribeToReview(activityId: string, fileName: string, bytes: Buffer, provider: AsrProvider): Promise<string> {
   const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
   if (!ALLOWED.includes(ext)) throw new Error("unsupported_format");
-  const { tosUrl, taskId } = await provider.uploadAndSubmit(fileName, bytes);
-  return prisma.asrJob.create({ data: { activityId, fileName, tosUrl, volcTaskId: taskId, status: "transcribing" } });
-}
-
-export async function pollAsrJobs(provider: AsrProvider) {
-  const jobs = await prisma.asrJob.findMany({ where: { status: "transcribing" } });
-  for (const job of jobs) {
-    if (!job.volcTaskId) continue;
-    const r = await provider.queryResult(job.volcTaskId);
-    if (r.failed) { await prisma.asrJob.update({ where: { id: job.id }, data: { status: "failed", failReason: r.reason ?? "转写失败" } }); continue; }
-    if (!r.done) continue;
-    // 原子追加：读 rawNotes、拼接、写回、置 succeeded 都在一个事务内，
-    // 避免事务失败后 job 仍 transcribing、下轮重复追加同一段转写。
-    await prisma.$transaction(async (tx) => {
-      const review = await tx.activityReview.upsert({ where: { activityId: job.activityId }, update: {}, create: { activityId: job.activityId, rawNotes: "" } });
-      const block = `${review.rawNotes ? review.rawNotes + "\n\n" : ""}${job.fileName} 转写内容\n${r.text ?? ""}`;
-      await tx.activityReview.update({ where: { activityId: job.activityId }, data: { rawNotes: block } });
-      await tx.asrJob.update({ where: { id: job.id }, data: { status: "succeeded", transcript: r.text ?? "" } });
+  const { text } = await provider.transcribe(bytes, ext);
+  // 原子追加：读 rawNotes、拼接（标题行 + 正文）、写回
+  await prisma.$transaction(async (tx) => {
+    const review = await tx.activityReview.upsert({
+      where: { activityId },
+      update: {},
+      create: { activityId, rawNotes: "" },
     });
-  }
+    const block = `${review.rawNotes ? review.rawNotes + "\n\n" : ""}${fileName} 转写内容\n${text}`;
+    await tx.activityReview.update({ where: { activityId }, data: { rawNotes: block } });
+  });
+  return text;
 }

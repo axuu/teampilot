@@ -1,8 +1,6 @@
 import { prisma } from "../db/client.js";
 import { sendReminder } from "../notifications/service.js";
 import { larkNotifier, type FeishuNotifier } from "../feishu/notify.js";
-import { pollAsrJobs } from "../asr/service.js";
-import { volcAsrProvider } from "../asr/provider.js";
 
 // 找出 published 且已过 start+duration 的活动，置为 ended，并把 going 的参与者初始化为 pending
 export async function runAutoEnd(now: Date) {
@@ -36,7 +34,6 @@ export async function tick(now: Date) {
   try {
     await runAutoEnd(now);
     await runReminders(now, larkNotifier);
-    await pollAsrJobs(volcAsrProvider);
   } catch (err) {
     console.error("[scheduler] tick failed:", err);
   }
