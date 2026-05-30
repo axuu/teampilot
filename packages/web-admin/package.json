@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "vite --port 5173",
     "build": "tsc --noEmit && vite build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e:preview": "vite build && vite preview --port 5173 --strictPort"
   },
   "dependencies": {
     "@teampilot/shared": "workspace:*",
