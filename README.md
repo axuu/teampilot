@@ -105,6 +105,10 @@ pnpm --filter @teampilot/e2e exec playwright install chromium
 pnpm e2e
 ```
 
+### 6) 真机 smoke 测试（发布前人工）
+
+自动化用确定性假实现跑；**真飞书 / 真方舟 / 真火山 / 真实部署环境**只能人工验。发布前按 [docs/smoke-test.md](docs/smoke-test.md) 跑一遍（卡片推送与报名回调、Bot 问答、AI 生成、录音转写、H5 真免登、HTTPS/cookie）。
+
 ---
 
 ## 关键约定
@@ -121,5 +125,6 @@ pnpm e2e
 |---|---|
 | [docs/feishu-app-setup.md](docs/feishu-app-setup.md) | 飞书自建应用配置（机器人/权限/长连接订阅/发版）+ 卡片回调 200340 排错 |
 | [docs/volc-asr-setup.md](docs/volc-asr-setup.md) | 火山豆包 ASR(极速版) + 方舟 LLM 配置、接口、排错 |
+| [docs/smoke-test.md](docs/smoke-test.md) | 发布前真机 smoke 清单（真飞书/方舟/火山 + 生产环境，自动化够不到的部分） |
 | [docs/superpowers/specs/](docs/superpowers/specs/) | 产品规格 + 架构设计（数据模型、数据流、裁决记录） |
 | [docs/superpowers/plans/](docs/superpowers/plans/) | Plan A/B/C/D 分阶段实现计划 |
