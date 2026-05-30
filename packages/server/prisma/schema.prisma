@@ -57,7 +57,6 @@ model Activity {
   createdAt        DateTime  @default(now())
   participants     ActivityParticipant[]
   review           ActivityReview?
-  asrJobs          AsrJob[]
   notifications    NotificationLog[]
 }
 
@@ -80,19 +79,6 @@ model ActivityReview {
   aiSummary          String?
   aiSummaryUpdatedAt DateTime?
   activity           Activity  @relation(fields: [activityId], references: [id])
-}
-
-model AsrJob {
-  id         String   @id @default(cuid())
-  activityId String
-  fileName   String
-  tosUrl     String
-  volcTaskId String?
-  status     String   @default("uploading")
-  failReason String?
-  transcript String?
-  createdAt  DateTime @default(now())
-  activity   Activity @relation(fields: [activityId], references: [id])
 }
 
 model NotificationLog {
