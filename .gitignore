@@ -6,3 +6,6 @@ dist/
 .DS_Store
 packages/server/prisma/*.db
 coverage/
+packages/e2e/playwright-report/
+packages/e2e/test-results/
+packages/e2e/blob-report/
