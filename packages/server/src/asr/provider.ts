@@ -1,12 +1,38 @@
+import { randomUUID } from "node:crypto";
+
+// 同步转写：传音频字节 + 格式，返回转写文本
 export interface AsrProvider {
-  // 上传到 TOS 并向火山提交识别任务，返回 tosUrl + taskId
-  uploadAndSubmit(fileName: string, bytes: Buffer): Promise<{ tosUrl: string; taskId: string }>;
-  // 查询任务；done=false 表示仍在转写
-  queryResult(taskId: string): Promise<{ done: boolean; text?: string; failed?: boolean; reason?: string }>;
+  transcribe(bytes: Buffer, format: string): Promise<{ text: string }>;
 }
 
-// 真实实现：火山 TOS 上传 + 大模型录音文件识别（提交/查询）。具体 SDK 调用按火山文档实现。
+const ENDPOINT = "https://openspeech.bytedance.com/api/v3/auc/bigmodel/recognize/flash";
+const RESOURCE_ID = process.env.VOLC_ASR_RESOURCE_ID ?? "volc.bigasr.auc_turbo";
+
+// 真实实现：豆包录音识别2.0 极速版 flash（内联 base64，同步）
 export const volcAsrProvider: AsrProvider = {
-  async uploadAndSubmit() { throw new Error("接入火山 TOS + 录音文件识别后实现"); },
-  async queryResult() { throw new Error("接入火山录音文件识别后实现"); },
+  async transcribe(bytes, format) {
+    if (process.env.NODE_ENV === "test") throw new Error("volcAsrProvider 不应在测试中被调用，请注入假的 AsrProvider");
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Api-App-Key": process.env.VOLC_ASR_APP_ID ?? "",
+        "X-Api-Access-Key": process.env.VOLC_ASR_ACCESS_TOKEN ?? "",
+        "X-Api-Resource-Id": RESOURCE_ID,
+        "X-Api-Request-Id": randomUUID(),
+        "X-Api-Sequence": "-1",
+      },
+      body: JSON.stringify({
+        user: { uid: "teampilot" },
+        audio: { data: bytes.toString("base64"), format },
+        request: { model_name: "bigmodel", enable_itn: true, enable_punc: true },
+      }),
+    });
+    const statusCode = res.headers.get("X-Api-Status-Code");
+    if (statusCode !== "20000000") {
+      throw new Error(`ASR 失败 (code ${statusCode}): ${res.headers.get("X-Api-Message") ?? ""}`);
+    }
+    const data = (await res.json()) as { result?: { text?: string } };
+    return { text: data.result?.text ?? "" };
+  },
 };
