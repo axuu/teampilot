@@ -42,6 +42,7 @@ for (const m of roster) {
   });
 }
 
+// 不注入 feishuAuth：e2e 仅覆盖 web-admin（admin）路由，不触碰 /api/h5（飞书授权），故 larkAuthClient 永不被调用
 const app = createApp({ notifier: fakeNotifier, llm: fakeLLM, asr: fakeAsr });
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => console.log(`[e2e] server on :${port}`));

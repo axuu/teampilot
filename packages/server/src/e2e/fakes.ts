@@ -26,6 +26,7 @@ export const fakeLLM: LLMClient = {
     if (system.includes("比赛助理")) {
       return JSON.stringify({ strategy: "（e2e）稳守反击", starting: "（e2e）首发名单", bench: "（e2e）替补待命" });
     }
+    console.warn(`[fakeLLM] 未匹配的 system 提示词，返回空对象（assistant/memberBot 等未覆盖）: ${system.slice(0, 60)}`);
     return JSON.stringify({});
   },
 };
