@@ -28,7 +28,8 @@
 - `packages/e2e/fixtures/sample.mp3` — 上传用的占位音频（内容无关，fakeAsr 忽略字节）
 
 修改：
-- 根 `package.json` — `pnpm.onlyBuiltDependencies` + 根 `e2e` 脚本
+- `pnpm-workspace.yaml` — 填 `allowBuilds`（修 pnpm test，Task 1）
+- 根 `package.json` — 加根 `e2e` 脚本（Task 5）；安装 Playwright 后可能需在 `pnpm-workspace.yaml` 的 `allowBuilds` 追加 `playwright`（Task 5）
 - `packages/server/src/app.ts` — `createApp` 增加 `asr` 注入并传给 `makeReviewsRouter`
 - `packages/server/package.json` — 加 `e2e:server` 脚本
 - `packages/web-admin/src/../vite.config.ts`（`packages/web-admin/vite.config.ts`）— 补 `preview.proxy`
@@ -40,47 +41,49 @@
 
 ## Task 1: Part A —— 修复 `pnpm test`
 
+> **本任务已在审计中实测验证。** 正确修法是填 `pnpm-workspace.yaml` 的 `allowBuilds`，**不是** `package.json` 的 `pnpm.onlyBuiltDependencies`。
+
+**根因（实测确认）:** 企业版 pnpm(11.2.2) 的 `verify-deps-before-run` 在跑任何脚本前先 `pnpm install`。`pnpm-workspace.yaml` 里有企业 wrapper 自动生成的一段 `allowBuilds:`，其值是占位串 `set this to true or false`（无效值＝「未决定」），导致 prisma/esbuild/protobufjs 等构建脚本被「忽略」并以 `ERR_PNPM_IGNORED_BUILDS` 退出码 1 失败，测试未开始。
+
+> **坑（审计实测）:** pnpm 11 **不再读** `package.json` 的 `pnpm` 字段——填 `pnpm.onlyBuiltDependencies` 只会打印 `The "pnpm" field in package.json is no longer read by pnpm` 并被忽略，错误依旧。配置必须放 `pnpm-workspace.yaml`。
+
 **Files:**
-- Modify: `package.json`（仓库根）
+- Modify: `pnpm-workspace.yaml`（仓库根）
 
 - [ ] **Step 1: 复现当前失败**
 
-Run: `pnpm -r --no-bail test`
-Expected: 报 `[ERR_PNPM_IGNORED_BUILDS] ... @prisma/client, ... esbuild ...` 且以退出码 1 失败，测试未开始。
+Run: `pnpm install`
+Expected: 报 `[ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: @prisma/client@..., esbuild@..., prisma@..., protobufjs@...` 且以退出码 1 失败。
 
-- [ ] **Step 2: 在根 `package.json` 声明构建脚本白名单**
+- [ ] **Step 2: 把 `pnpm-workspace.yaml` 的 allowBuilds 占位串填为 `true`**
 
-把根 `package.json` 改成（仅新增 `pnpm` 字段）：
+把 `pnpm-workspace.yaml` 改成（保留 `packages:`，把 allowBuilds 五项的占位串改为 `true`）：
 
-```json
-{
-  "name": "teampilot",
-  "private": true,
-  "type": "module",
-  "engines": { "node": ">=20" },
-  "scripts": {
-    "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "dev:server": "pnpm --filter @teampilot/server dev"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": ["@prisma/client", "prisma", "esbuild", "protobufjs"]
-  }
-}
+```yaml
+packages:
+  - "packages/*"
+allowBuilds:
+  '@prisma/client': true
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  protobufjs: true
 ```
 
 - [ ] **Step 3: 验证 `pnpm test` 一键跑通**
 
-Run: `pnpm test`
-Expected: 4 个包依次跑完，`server` 24 文件/76 测试、`web-admin` 10/16、`web-h5` 1/4、`shared` 1/5，全绿，进程退出码 0，无 `ERR_PNPM_IGNORED_BUILDS`。
+Run: `pnpm install && pnpm test`
+Expected:
+- `pnpm install` 跑完全部 postinstall（esbuild/@prisma/engines/protobufjs/prisma/@prisma/client），结尾 `Done in ~5s`，无 `ERR_PNPM_IGNORED_BUILDS`。（@prisma/client 的 postinstall 会 warn「could not find Prisma schema」——无害，client 由 server 自身工具链生成，不影响测试。）
+- `pnpm test` 4 个包全绿、进程退出码 0：`server` 24 文件/76、`web-admin` 10/16、`web-h5` 1/4、`shared` 1/5。
 
-> 兜底：若企业层把 ignored-builds 升级成更硬的策略导致白名单无效，改为在根 `package.json` 的 `test` 脚本前置关闭校验：`"test": "pnpm -r --config.verify-deps-before-run=false test"`；若仍不行，记录到 spec「备选」并以「逐包 `./node_modules/.bin/vitest run`」为兜底跑法。
+> 兜底：若企业层把 ignored-builds 升级成更硬的策略导致 `allowBuilds: true` 无效，改为在 `test` 脚本前置关闭校验：`pnpm -r --config.verify-deps-before-run=false test`；若仍不行，以「逐包 `./node_modules/.bin/vitest run`」为兜底跑法并记录到 spec。
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add package.json
-git commit -m "fix(repo): 声明 pnpm.onlyBuiltDependencies 让 pnpm test 一键跑通"
+git add pnpm-workspace.yaml
+git commit -m "fix(repo): 填写 pnpm-workspace.yaml allowBuilds 让 pnpm test 一键跑通"
 ```
 
 ---
@@ -485,12 +488,20 @@ packages/e2e/blob-report/
 
 - [ ] **Step 6: 安装依赖与浏览器**
 
-Run:
+> **审计提醒（高）:** `@playwright/test` 依赖的 `playwright` 包带 postinstall（浏览器下载），会再次撞上 Task 1 的同一道 allowBuilds 闸——企业 wrapper 会在 `pnpm-workspace.yaml` 的 `allowBuilds` 追加 `playwright: set this to true or false` 并以 `ERR_PNPM_IGNORED_BUILDS` 报错。需把它（及任何新出现的占位项）填为 `true` 再重装。
+>
+> **风险（执行前先验，go/no-go）:** 引入新外部依赖 `@playwright/test` 还要过 Canva 的「supply-chain policy」校验（install 时会 `Verifying lockfile against supply-chain policies`）。若 install 因 **policy**（而非 ignored-builds）被拦，这是组织级审批闸、非代码可解——需走内部依赖审批流程。**建议执行 Task 5 前先单独 `pnpm --filter @teampilot/e2e add -D @playwright/test` 试一次**，确认能过 policy，再继续后续任务。
+
+Run（先加依赖；若报 ignored-builds，按上面提示补 allowBuilds 后重跑 install）:
 ```bash
+pnpm --filter @teampilot/e2e add -D @playwright/test @types/node
+# 若报 ERR_PNPM_IGNORED_BUILDS 且 pnpm-workspace.yaml 新增了 playwright 占位项：
+#   把该项改为 `playwright: true`（编辑 pnpm-workspace.yaml），再：
 pnpm install
 pnpm --filter @teampilot/e2e exec playwright install chromium
 ```
-Expected: install 成功（无 `ERR_PNPM_IGNORED_BUILDS`，已由 Task 1 解决）；chromium 下载完成。
+Expected: 依赖装上、`pnpm-workspace.yaml` 中 `playwright` 已是 `true`（若曾出现）、无 `ERR_PNPM_IGNORED_BUILDS`、chromium 下载完成。
+（若 Step 1 已把 `@playwright/test` 写进 `packages/e2e/package.json`，可直接 `pnpm install` 代替 `add`，行为一致。）
 
 Run（确认 Playwright 可用）：
 ```bash
@@ -501,9 +512,10 @@ Expected: 打印 `Version 1.49.x`。
 - [ ] **Step 7: Commit**
 
 ```bash
-git add packages/e2e/package.json packages/e2e/tsconfig.json packages/e2e/playwright.config.ts package.json pnpm-lock.yaml .gitignore
+git add packages/e2e/package.json packages/e2e/tsconfig.json packages/e2e/playwright.config.ts package.json pnpm-lock.yaml pnpm-workspace.yaml .gitignore
 git commit -m "chore(e2e): 搭建 packages/e2e Playwright 骨架"
 ```
+（`pnpm-workspace.yaml` 仅在 Step 6 因 playwright 新增 allowBuilds 项时才有改动；无改动则 `git add` 会忽略它。）
 
 ---
 
@@ -558,7 +570,8 @@ test("队长后台核心 happy path：登录→建活动→选参与人→发布
   await page.getByLabel("开始时间").fill("2026-06-07T18:30");
 
   // 4) 发布（确认弹窗 → 确认发布）
-  await page.getByRole("button", { name: "发布" }).click();
+  // 注意：getByRole 的 name 默认是「子串」匹配，"发布" 会同时命中 "确认发布"，故用 exact:true
+  await page.getByRole("button", { name: "发布", exact: true }).click();
   await expect(page.getByText("是否要发布活动？")).toBeVisible();
   await page.getByRole("button", { name: "确认发布" }).click();
 
@@ -577,7 +590,12 @@ test("队长后台核心 happy path：登录→建活动→选参与人→发布
   await page.getByRole("button", { name: "活动复盘" }).click();
   const notes = page.getByRole("textbox");
   await notes.fill("队员状态不错，配合默契。");
-  await notes.blur(); // onBlur 触发保存
+  // onBlur 触发 PUT 保存。必须等保存完成再上传，否则与转写的「读-改-写」存在竞态：
+  // 后置落地的 PUT 可能覆盖掉转写文本，导致 toHaveValue 偶发失败。用 waitForResponse 同步。
+  await Promise.all([
+    page.waitForResponse((r) => /\/review$/.test(new URL(r.url()).pathname) && r.request().method() === "PUT"),
+    notes.blur(),
+  ]);
 
   // 上传录音 → fakeAsr 返回固定文本，后端追加进 rawNotes，前端重拉展示
   await page.locator('input[type="file"]').setInputFiles(SAMPLE_MP3);
@@ -656,3 +674,12 @@ git commit -m "docs: README 补充 e2e 测试章节"
 - **占位符**：无 TBD/TODO；每个改动均给出完整代码与确切命令、预期输出。
 - **类型一致**：`createApp` 新增 `asr?: AsrProvider`（Task 2）与启动器注入 `asr`（Task 3）一致；`fakeNotifier.sendCard(openId, card)` 匹配 `FeishuNotifier`；`fakeLLM.completeJSON(system, user)` 匹配 `LLMClient`；`fakeAsr.transcribe(bytes, format)` 匹配 `AsrProvider`；通知计数断言「2」与「取消勾选丙 / seed 3 人」一致。
 - **范围**：聚焦两件确认过的事，单一实现计划可完成。
+
+## 审计修订记录（两遍审计后修正，2026-05-30）
+
+- **[已实测修正·高] Task 1 修法错误**：原写法 `package.json` 的 `pnpm.onlyBuiltDependencies` 在 pnpm 11 被忽略（实测仍报 `ERR_PNPM_IGNORED_BUILDS`）。正确修法＝填 `pnpm-workspace.yaml` 的 `allowBuilds` 五项为 `true`。已实测 `pnpm install` + `pnpm test` 4 包全绿、退出码 0。
+- **[已修·高] Task 5 装 Playwright 会再触发同一道 allowBuilds 闸**：`playwright` 带 postinstall，wrapper 会新增 `playwright` 占位项并报错——需补填为 `true` 再装。另：新外部依赖须过 Canva supply-chain policy，建议执行前先单独 `add` 验证（go/no-go）。
+- **[已修·中] Task 6 竞态**：复盘 `onBlur` 的 PUT 与上传转写的「读-改-写」存在竞态，后置 PUT 可能覆盖转写文本→偶发失败。改用 `waitForResponse` 等 PUT 完成再上传。
+- **[已修·低] Task 6 选择器**：`getByRole` name 默认子串匹配，`发布` 会命中 `确认发布`，已加 `exact:true`。
+- **[已核对·通过]**：`/api/admin/settings` 返回 `defaultLocation`（断言「e2e训练基地」成立）；`Layout` 无 textbox，复盘页 `getByRole("textbox")` 唯一命中；导航有「活动管理」链接但断言用 `getByRole("heading")` 不冲突；`db/client.ts` import 即实例化 PrismaClient → 启动器「先设 env 再动态 import」正确；`.env`（含真实密钥）已 gitignore、dotenv 不覆盖已设 env → e2e DB 隔离成立；`notifyPublish` 按 active 参与人计数 → 「成功 2」成立。
+- **[备注·低] 性能**：Playwright webServer 经 `pnpm --filter` 启动会各自付一次 verify-deps + supply-chain 校验（~8s）。可选优化：webServer 命令前置 `--config.verify-deps-before-run=false` 或直接 `tsx`。不影响正确性。
