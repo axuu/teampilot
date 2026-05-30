@@ -12,6 +12,7 @@ import { createJoinRouter } from "./members/join.js";
 import { settingsRouter } from "./settings/routes.js";
 import { arkClient, type LLMClient } from "./ai/client.js";
 import { makeReviewsRouter } from "./reviews/routes.js";
+import { volcAsrProvider, type AsrProvider } from "./asr/provider.js";
 import { makeAssistantRouter } from "./assistant/routes.js";
 
 declare global {
@@ -20,10 +21,11 @@ declare global {
   }
 }
 
-export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: FeishuNotifier; llm?: LLMClient } = {}) {
+export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: FeishuNotifier; llm?: LLMClient; asr?: AsrProvider } = {}) {
   const feishuAuth = deps.feishuAuth ?? larkAuthClient;
   const notifier = deps.notifier ?? larkNotifier;
   const llm = deps.llm ?? arkClient;
+  const asr = deps.asr ?? volcAsrProvider;
   const config = loadConfig();
   const app = express();
   app.use(express.json({ limit: "1mb" }));
@@ -33,7 +35,7 @@ export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: Feis
   app.use("/api/admin/members", membersRouter);
   app.use("/api/admin/activities", makeActivitiesRouter(notifier, llm));
   app.use("/api/admin/activities", attendanceRouter);
-  app.use("/api/admin/activities", makeReviewsRouter(llm));
+  app.use("/api/admin/activities", makeReviewsRouter(llm, asr));
   app.use("/api/admin/settings", settingsRouter);
   app.use("/api/admin/assistant", makeAssistantRouter(llm));
   app.use("/api/h5", createJoinRouter(feishuAuth));
