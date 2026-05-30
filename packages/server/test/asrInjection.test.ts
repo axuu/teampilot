@@ -6,8 +6,7 @@ import { seed } from "../prisma/seed.js";
 import { prisma } from "../src/db/client.js";
 
 const fakeAsr = { transcribe: vi.fn().mockResolvedValue({ text: "注入转写文本" }) };
-const fakeLLM = { completeJSON: vi.fn().mockResolvedValue(JSON.stringify({ summary: "ok" })) };
-const app = createApp({ llm: fakeLLM, asr: fakeAsr });
+const app = createApp({ asr: fakeAsr });
 
 beforeEach(async () => { await resetDb(); await seed(); fakeAsr.transcribe.mockClear(); });
 async function login() { const a = request.agent(app); await a.post("/api/admin/login").send({ username: "Levin", password: "change-me" }); return a; }
