@@ -9,6 +9,22 @@ type CardEvent = { operator: { open_id: string }; action: { value: { activityId:
 const respLabel: Record<string, string> = { going: "去", not_going: "不去", no_response: "未反馈" };
 const label = (r: string) => respLabel[r] ?? r;
 
+// 飞书事件可能重复投递（at-least-once）。按消息 id 去重，保证同一条消息只处理一次。
+export function createMessageDedup(maxSize = 2000) {
+  const seen = new Set<string>();
+  return (id: string): boolean => {
+    if (seen.has(id)) return false; // 已处理过 → 跳过
+    seen.add(id);
+    if (seen.size > maxSize) {
+      // Set 保留插入顺序：淘汰最旧的一半，避免无界增长
+      const drop = seen.size - Math.floor(maxSize / 2);
+      let i = 0;
+      for (const id2 of seen) { if (i++ >= drop) break; seen.delete(id2); }
+    }
+    return true; // 新消息 → 应处理
+  };
+}
+
 // 返回给飞书的提示文本；同时按规则更新或拒绝
 export async function handleCardAction(event: CardEvent, now: Date): Promise<{ text: string }> {
   const openId = event.operator.open_id;
@@ -32,12 +48,15 @@ export async function handleCardAction(event: CardEvent, now: Date): Promise<{ t
 export function startLongConnection(llm: LLMClient) {
   const cfg = loadConfig();
   const wsClient = new lark.WSClient({ appId: cfg.feishuAppId, appSecret: cfg.feishuAppSecret });
+  const isNewMessage = createMessageDedup();
   const dispatcher = new lark.EventDispatcher({}).register({
     "card.action.trigger": async (data: CardEvent) => {
       const out = await handleCardAction(data, new Date());
       return { toast: { type: "info", content: out.text } };
     },
     "im.message.receive_v1": async (data: any) => {
+      const msgId = data?.message?.message_id ?? data?.event_id ?? data?.header?.event_id;
+      if (msgId && !isNewMessage(msgId)) return; // 去重：重复投递的同一条消息直接跳过
       const openId = data?.sender?.sender_id?.open_id;
       if (!openId) return;
       const text = JSON.parse(data?.message?.content ?? "{}").text ?? "";
