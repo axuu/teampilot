@@ -56,6 +56,8 @@
 
 > 关键验证点：真模型可能不输出纯 JSON。`extractJsonText` 负责剥离 ```json 围栏、截取 `{…}`；若 zod 解析失败，后端会报错并对应接口返回 500/降级。**跑 B 区时盯一眼后端日志**有无解析失败。
 
+> **一键核验（推荐，无用户可见副作用，仅消耗 token）**：`cd packages/server && tsx --env-file=.env scripts/verify-ark-llm.ts` —— 用真方舟跑全部 6 个 AI 场景（覆盖 B1–B5 + 活动总结），逐个验证真模型输出能过 `extractJsonText` + zod 解析。2026-05-30 实测 **6/6 通过**。
+
 ---
 
 ## C. 真火山 ASR
