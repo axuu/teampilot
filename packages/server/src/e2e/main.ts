@@ -23,26 +23,35 @@ execSync("node_modules/.bin/prisma db push --force-reset --skip-generate", {
 
 const { prisma } = await import("../db/client.js");
 const { seed } = await import("../../prisma/seed.js");
+const { resetDb } = await import("../../test/helpers/db.js");
 const { createApp } = await import("../app.js");
-const { fakeNotifier, fakeLLM, fakeAsr } = await import("./fakes.js");
+const { fakeNotifier, fakeLLM, fakeAsr, fakeFeishuAuth } = await import("./fakes.js");
 
-await seed(); // 队长 Levin + 团队设置(defaultLocation=e2e训练基地)
-
-// 注入 3 名 active 队员（seed 本身不含队员），让发布有参与人
+// 3 名 active 队员（seed 本身不含队员），让发布有参与人
 const roster = [
   { name: "甲", feishuOpenId: "ou_e2e_jia" },
   { name: "乙", feishuOpenId: "ou_e2e_yi" },
   { name: "丙", feishuOpenId: "ou_e2e_bing" },
 ];
-for (const m of roster) {
-  await prisma.member.upsert({
-    where: { feishuOpenId: m.feishuOpenId },
-    update: {},
-    create: { name: m.name, primaryPosition: "tekong", status: "active", feishuOpenId: m.feishuOpenId },
-  });
+
+// 把库重置回确定性基线（队长 + 团队设置 + 3 名 active 队员）。启动时与每个测试前都用它，保证 spec 间隔离、与执行顺序无关。
+async function reseed() {
+  await resetDb();
+  await seed();
+  for (const m of roster) {
+    await prisma.member.create({ data: { name: m.name, primaryPosition: "tekong", status: "active", feishuOpenId: m.feishuOpenId } });
+  }
 }
 
-// 不注入 feishuAuth：e2e 仅覆盖 web-admin（admin）路由，不触碰 /api/h5（飞书授权），故 larkAuthClient 永不被调用
-const app = createApp({ notifier: fakeNotifier, llm: fakeLLM, asr: fakeAsr });
+await reseed();
+
+const app = createApp({ feishuAuth: fakeFeishuAuth, notifier: fakeNotifier, llm: fakeLLM, asr: fakeAsr });
+
+// 仅 e2e 启动器挂载：测试隔离用的重置端点（生产 createApp 不含此路由）
+app.post("/api/test/reset", async (_req, res) => {
+  await reseed();
+  res.json({ ok: true });
+});
+
 const port = Number(process.env.PORT ?? 3000);
 app.listen(port, () => console.log(`[e2e] server on :${port}`));

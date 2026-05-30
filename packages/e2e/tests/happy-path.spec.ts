@@ -5,6 +5,10 @@ const SAMPLE_MP3 = fileURLToPath(new URL("../fixtures/sample.mp3", import.meta.u
 
 test.describe.configure({ mode: "serial" });
 
+test.beforeEach(async ({ request }) => {
+  await request.post("http://localhost:3000/api/test/reset");
+});
+
 test("队长后台核心 happy path：登录→建活动→选参与人→发布→通知状态→复盘转写+AI概要", async ({ page }) => {
   // 1) 登录
   await page.goto("/");

@@ -1,3 +1,4 @@
+import type { FeishuAuthClient } from "../feishu/auth.js";
 import type { FeishuNotifier } from "../feishu/notify.js";
 import type { LLMClient } from "../ai/client.js";
 import type { AsrProvider } from "../asr/provider.js";
@@ -28,6 +29,13 @@ export const fakeLLM: LLMClient = {
     }
     console.warn(`[fakeLLM] 未匹配的 system 提示词，返回空对象（assistant/memberBot 等未覆盖）: ${system.slice(0, 60)}`);
     return JSON.stringify({});
+  },
+};
+
+// 飞书免登：把 code 直接当 open_id（"fail" 代表识别失败），供 H5 入队 e2e 用
+export const fakeFeishuAuth: FeishuAuthClient = {
+  async getUserOpenIdByCode(code: string) {
+    return code === "fail" ? null : code;
   },
 };
 

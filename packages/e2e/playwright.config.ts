@@ -28,5 +28,13 @@ export default defineConfig({
       stdout: "pipe",
       stderr: "pipe",
     },
+    {
+      command: "pnpm --filter @teampilot/web-h5 e2e:preview",
+      url: "http://localhost:5174",
+      timeout: 120_000,
+      reuseExistingServer: !process.env.CI,
+      stdout: "pipe",
+      stderr: "pipe",
+    },
   ],
 });
