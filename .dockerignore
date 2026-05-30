@@ -1,0 +1,15 @@
+# Docker 构建上下文 = 仓库根；这里排除无关/重型/敏感内容
+# 注意：保留所有 packages/*/package.json，pnpm 工作区解析需要它们
+**/node_modules
+**/dist
+.git
+.github
+**/*.db
+**/*.db-journal
+**/.env
+**/coverage
+.DS_Store
+packages/e2e/playwright-report
+packages/e2e/test-results
+packages/e2e/blob-report
+docs/superpowers

@@ -1,0 +1,67 @@
+# TeamPilot 部署（Coolify / 任意 docker compose 主机）
+# 形态：server(内部) + web-admin + web-h5 + 持久卷 tp-data(SQLite)。
+# TLS/域名由 Coolify(Traefik) 托管；compose 内不做 TLS。
+# 环境变量在 Coolify UI（或同目录 .env）维护。
+
+services:
+  server:
+    build:
+      context: .
+      dockerfile: docker/server.Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production           # cookie secure=true（依赖公网 HTTPS，由 Coolify 提供）
+      PORT: "3000"
+      DATABASE_URL: file:/data/prod.db
+      TEAM_TZ: ${TEAM_TZ:-Asia/Shanghai}
+      CAPTAIN_USERNAME: ${CAPTAIN_USERNAME}
+      CAPTAIN_PASSWORD: ${CAPTAIN_PASSWORD}
+      TEAM_DEFAULT_LOCATION: ${TEAM_DEFAULT_LOCATION}
+      TEAM_JOIN_TOKEN: ${TEAM_JOIN_TOKEN}
+      SESSION_SECRET: ${SESSION_SECRET}
+      FEISHU_APP_ID: ${FEISHU_APP_ID}
+      FEISHU_APP_SECRET: ${FEISHU_APP_SECRET}
+      H5_BASE_URL: ${H5_BASE_URL}     # 须等于 web-h5 的公网域名，如 https://h5.example.com
+      ARK_API_KEY: ${ARK_API_KEY}
+      ARK_BASE_URL: ${ARK_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}
+      ARK_MODEL: ${ARK_MODEL}
+      VOLC_ASR_APP_ID: ${VOLC_ASR_APP_ID}
+      VOLC_ASR_ACCESS_TOKEN: ${VOLC_ASR_ACCESS_TOKEN}
+    volumes:
+      - tp-data:/data               # SQLite 持久化（备份=拷 /data/prod.db）
+    expose:
+      - "3000"                      # 仅内部网络，不对外
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web-admin:
+    build:
+      context: .
+      dockerfile: docker/web-admin.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    expose:
+      - "80"
+    # Coolify：在该服务的 UI 里设置域名（如 admin.example.com），Coolify 自动签 HTTPS。
+    # 也可改用魔法变量： environment: { SERVICE_FQDN_WEBADMIN_80: "" }
+
+  web-h5:
+    build:
+      context: .
+      dockerfile: docker/web-h5.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      server:
+        condition: service_healthy
+    expose:
+      - "80"
+    # Coolify：设置域名（如 h5.example.com），并把该域名回填到 server 的 H5_BASE_URL。
+
+volumes:
+  tp-data:
