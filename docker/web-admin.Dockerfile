@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # 队长后台 SPA：构建静态产物 → nginx 托管 + 同源反代 /api
 FROM node:20-slim AS build
-RUN npm install -g pnpm@10
+RUN npm install -g pnpm@11.2.2
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 WORKDIR /app
 COPY . .
