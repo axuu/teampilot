@@ -5,7 +5,7 @@ import { useToast } from "../components/Toast.js";
 import { POSITIONS, MEMBER_LEVELS, MEMBER_STYLES, MEMBER_STATUSES } from "@teampilot/shared";
 
 type Member = { id: string; name: string; jerseyNumber: string | null; primaryPosition: string; backupPosition: string | null; level: string | null; style: string | null; status: string; captainNote: string | null };
-const JOIN_LINK = `${location.origin.replace(":5173", ":5174")}/?t=fixed-join-token-001`; // 与后端 TEAM_JOIN_TOKEN 一致
+type Settings = { joinLink: string };
 
 export default function Members() {
   const toast = useToast();
@@ -47,9 +47,9 @@ export default function Members() {
       {invite && (
         <Modal title="邀请队员入队" onClose={()=>setInvite(false)}
           footer={<><button className="border rounded px-3 py-1" onClick={()=>setInvite(false)}>关闭</button>
-            <button className="bg-blue-600 text-white rounded px-3 py-1" onClick={async()=>{await navigator.clipboard.writeText(JOIN_LINK); toast("已复制链接");}}>复制链接</button></>}>
+            <button className="bg-blue-600 text-white rounded px-3 py-1" onClick={async()=>{const s = await get<Settings>("/api/admin/settings"); await navigator.clipboard.writeText(s.joinLink); toast("已复制链接");}}>复制链接</button></>}>
           <p className="text-sm text-gray-600">请将以下链接在飞书中发给同学。同学可在此页面填写信息并申请入队：</p>
-          <code className="block bg-gray-100 p-2 rounded text-xs break-all">{JOIN_LINK}</code>
+          <p className="text-xs text-gray-400">点击"复制链接"获取邀请地址</p>
         </Modal>
       )}
 
