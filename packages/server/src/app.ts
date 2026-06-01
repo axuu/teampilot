@@ -29,7 +29,7 @@ export function createApp(deps: { feishuAuth?: FeishuAuthClient; notifier?: Feis
   const config = loadConfig();
   const app = express();
   app.use(express.json({ limit: "1mb" }));
-  app.use(cookieSession({ name: "tp", secret: config.sessionSecret, httpOnly: true, sameSite: "lax", maxAge: 7 * 24 * 3600 * 1000, secure: process.env.NODE_ENV === "production" }));
+  app.use(cookieSession({ name: "tp", secret: config.sessionSecret, httpOnly: true, sameSite: "lax", maxAge: 7 * 24 * 3600 * 1000, secure: process.env.NODE_ENV === "production", proxy: true }));
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
   app.use("/api/admin", authRouter);
   app.use("/api/admin/members", membersRouter);
