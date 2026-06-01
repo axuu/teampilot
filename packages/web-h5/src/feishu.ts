@@ -10,5 +10,6 @@ export const realFeishuBridge: FeishuBridge = {
 };
 
 export function getJoinToken(): string {
-  return new URLSearchParams(location.search).get("t") ?? "";
+  const params = new URLSearchParams(location.search);
+  return params.get("t") ?? params.get("state") ?? "";
 }

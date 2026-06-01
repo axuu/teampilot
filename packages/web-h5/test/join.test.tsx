@@ -26,6 +26,17 @@ describe("JoinPage", () => {
     expect(await screen.findByText("已加入球队")).toBeInTheDocument();
     expect(screen.getByText(/请在飞书.*打开.*Bot/)).toBeInTheDocument();
   });
+  it("uses OAuth state as the join token after Feishu redirects back", async () => {
+    history.replaceState({}, "", "/?code=ou_a&state=fixed-join-token-001");
+    mockJoin("created");
+    render(<JoinPage bridge={okBridge} />);
+    await userEvent.type(await screen.findByLabelText("姓名"), "甲");
+    await userEvent.selectOptions(screen.getByLabelText("擅长位置"), "tekong");
+    await userEvent.click(screen.getByRole("button", { name: "申请加入球队" }));
+    expect(await screen.findByText("已加入球队")).toBeInTheDocument();
+    const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string);
+    expect(body.token).toBe("fixed-join-token-001");
+  });
   it("already joined shows joined", async () => {
     mockJoin("already_joined");
     render(<JoinPage bridge={okBridge} />);

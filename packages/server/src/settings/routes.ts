@@ -8,10 +8,22 @@ const zRules = z.object({ trainingRules: z.string().max(5000), matchRules: z.str
 export const settingsRouter = Router();
 settingsRouter.use(requireCaptain);
 
+function buildFeishuAuthLink(appId: string, h5BaseUrl: string, joinToken: string) {
+  const redirectUri = new URL(h5BaseUrl);
+  redirectUri.search = "";
+  redirectUri.hash = "";
+
+  const authUrl = new URL("https://open.feishu.cn/open-apis/authen/v1/index");
+  authUrl.searchParams.set("app_id", appId);
+  authUrl.searchParams.set("redirect_uri", redirectUri.toString());
+  authUrl.searchParams.set("state", joinToken);
+  return authUrl.toString();
+}
+
 settingsRouter.get("/", async (_req, res) => {
   const s = await prisma.teamSettings.findUnique({ where: { id: "singleton" } });
   const cfg = loadConfig();
-  const joinLink = `${cfg.h5BaseUrl}/?t=${cfg.teamJoinToken}`;
+  const joinLink = buildFeishuAuthLink(cfg.feishuAppId, cfg.h5BaseUrl, cfg.teamJoinToken);
   res.json({ defaultLocation: s?.defaultLocation ?? "", trainingRules: s?.trainingRules ?? "", matchRules: s?.matchRules ?? "", joinLink });
 });
 

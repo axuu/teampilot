@@ -18,4 +18,14 @@ describe("settings", () => {
     expect(r2.body.trainingRules).toBe("必含发球");
     expect(r2.body.matchRules).toBe("保 Tekong");
   });
+
+  it("returns a Feishu auth invite link that redirects back to H5", async () => {
+    const agent = await login();
+    const res = await agent.get("/api/admin/settings");
+    const joinUrl = new URL(res.body.joinLink);
+    expect(joinUrl.origin + joinUrl.pathname).toBe("https://open.feishu.cn/open-apis/authen/v1/index");
+    expect(joinUrl.searchParams.get("app_id")).toBe("test");
+    expect(joinUrl.searchParams.get("redirect_uri")).toBe("http://localhost:5174/");
+    expect(joinUrl.searchParams.get("state")).toBe("fixed-join-token-001");
+  });
 });
