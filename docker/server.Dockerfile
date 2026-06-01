@@ -7,7 +7,7 @@ FROM node:20-slim
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-RUN npm install -g pnpm@11.2.2
+RUN npm install -g pnpm@10.29.2
 # 即便 --filter 没拦住，也兜底不下载 playwright 浏览器
 ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 
