@@ -9,3 +9,9 @@ coverage/
 packages/e2e/playwright-report/
 packages/e2e/test-results/
 packages/e2e/blob-report/
+
+# Agent / skill tooling (impeccable, etc.) — not product code
+.agents/
+.claude/
+.cursor/
+.gemini/
