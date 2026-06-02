@@ -62,14 +62,15 @@ export function listActivities(filter: { type?: string; status?: string }) {
 
 // 派生列（设计 F5）
 export function attendanceSummary(a: { status: string; participants: { attendanceResponse: string; actualAttendance: string | null }[] }) {
+  if (a.status === "cancelled") return "—";
   if (a.status === "ended") {
     const present = a.participants.filter((p) => p.actualAttendance === "present").length;
-    return `实到 ${present}/应到 ${a.participants.length}`;
+    return `${present} 实到 ｜ ${a.participants.length} 应到`;
   }
   const going = a.participants.filter((p) => p.attendanceResponse === "going").length;
   const not = a.participants.filter((p) => p.attendanceResponse === "not_going").length;
   const no = a.participants.filter((p) => p.attendanceResponse === "no_response").length;
-  return `去 ${going}/不去 ${not}/未反馈 ${no}`;
+  return `${going} 去 ｜ ${not} 不去 ｜ ${no} 未反馈`;
 }
 
 export function reviewStatus(a: { review: { rawNotes: string; aiSummary: string | null } | null }) {

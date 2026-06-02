@@ -46,7 +46,7 @@ test("队长后台核心 happy path：登录→建活动→选参与人→发布
 
   // 5) 活动概要 Tab（默认）：通知状态 = 成功 2 / 失败 0
   const notifBlock = page.getByText("通知状态：").locator(".."); // 锚定到 "通知状态：" span 的父 div，比 .last() 稳健
-  await expect(notifBlock).toContainText("成功 2 / 失败 0");
+  await expect(notifBlock).toContainText("2 成功 ｜ 0 失败");
 
   // 5b) 概要页 AI 按钮：生成训练建议（走 fakeLLM 训练助理分支）
   await page.getByRole("button", { name: "生成训练建议" }).click();

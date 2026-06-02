@@ -22,10 +22,10 @@ export default function SummaryTab({ detail }: { detail: Detail }) {
   return (
     <div className="space-y-3 text-sm">
       <p className="text-gray-400">{detail.type === "training" ? "训练活动" : "比赛活动"}</p>
-      <p><b>时间</b> {fmt(new Date(detail.startTime))}–{end.toTimeString().slice(0,5)}</p>
-      <p><b>地点</b> {detail.location}</p>
-      <p><b>活动主题</b><br/>{detail.theme || "—"}</p>
-      <p><b>注意事项</b><br/>{detail.notes || "—"}</p>
+      <p><b>时间：</b>{fmt(new Date(detail.startTime))}–{end.toTimeString().slice(0,5)}</p>
+      <p><b>地点：</b>{detail.location}</p>
+      <p><b>活动主题：</b><br/>{detail.theme || "—"}</p>
+      <p><b>注意事项：</b><br/>{detail.notes || "—"}</p>
       <div className="border-t pt-3">
         <p className="font-semibold">🤖 {adviceLabel}</p>
         {!advice && <button className="text-blue-600 text-sm" disabled={adviceBusy} onClick={() => void genAdvice()}>{adviceBusy ? "生成中…" : `生成${adviceLabel}`}</button>}
@@ -34,7 +34,7 @@ export default function SummaryTab({ detail }: { detail: Detail }) {
       <div className="border-t pt-3"><p className="font-semibold">🤖 活动总结</p><p className="text-sm whitespace-pre-wrap">{detail.summary || <span className="text-gray-400">当前暂无活动总结</span>}</p></div>
       {notif && (
         <div className="border-t pt-3 mt-3 text-sm">
-          <span className="text-gray-500">通知状态：</span>成功 {notif.success} / 失败 {notif.failed}
+          <span className="text-gray-500">通知状态：</span>{notif.success} 成功 ｜ {notif.failed} 失败
           {notif.failed > 0 && (
             <button className="ml-3 text-blue-600" onClick={async () => { const r = await post<{ success: number; failed: number }>(`/api/admin/activities/${detail.id}/notifications/retry`); setNotif(r); }}>重试失败通知</button>
           )}

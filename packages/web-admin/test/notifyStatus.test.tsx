@@ -16,10 +16,10 @@ beforeEach(() => {
 describe("SummaryTab notification status", () => {
   it("shows success/failed counts and a retry button when failed>0", async () => {
     render(<SummaryTab detail={detail as any} />);
-    expect(await screen.findByText(/成功\s*1/)).toBeInTheDocument();
-    expect(screen.getByText(/失败\s*1/)).toBeInTheDocument();
+    expect(await screen.findByText(/1\s*成功/)).toBeInTheDocument();
+    expect(screen.getByText(/1\s*失败/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "重试失败通知" }));
-    expect(await screen.findByText(/失败\s*0/)).toBeInTheDocument();
+    expect(await screen.findByText(/0\s*失败/)).toBeInTheDocument();
   });
   it("renders persisted advice on initial load with a regenerate button", async () => {
     const withAdvice = { ...detail, advice: JSON.stringify({ goal:"既定目标", plan:"既定安排" }) };
