@@ -44,7 +44,7 @@ test("队长后台核心 happy path：登录→建活动→选参与人→发布
   // 落到详情页（标题 = 活动名）
   await expect(page.getByRole("heading", { name: "e2e 周日训练" })).toBeVisible();
 
-  // 5) 活动概要 Tab（默认）：通知状态 = 成功 2 / 失败 0
+  // 5) 活动概要 Tab（默认）：通知状态 = 2 成功 ｜ 0 失败
   const notifBlock = page.getByText("通知状态：").locator(".."); // 锚定到 "通知状态：" span 的父 div，比 .last() 稳健
   await expect(notifBlock).toContainText("2 成功 ｜ 0 失败");
 

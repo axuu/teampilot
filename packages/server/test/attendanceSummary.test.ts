@@ -21,4 +21,10 @@ describe("attendanceSummary format", () => {
   it("cancelled: dash", () => {
     expect(attendanceSummary({ status: "cancelled", participants: [] })).toBe("—");
   });
+  it("draft: same format as published", () => {
+    const a = { status: "draft", participants: [
+      { attendanceResponse: "going", actualAttendance: null },
+    ] };
+    expect(attendanceSummary(a)).toBe("1 去 ｜ 0 不去 ｜ 0 未反馈");
+  });
 });

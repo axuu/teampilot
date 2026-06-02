@@ -18,6 +18,7 @@ describe("SummaryTab notification status", () => {
     render(<SummaryTab detail={detail as any} />);
     expect(await screen.findByText(/1\s*成功/)).toBeInTheDocument();
     expect(screen.getByText(/1\s*失败/)).toBeInTheDocument();
+    expect(screen.getByText(/1\s*成功\s*｜\s*1\s*失败/)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "重试失败通知" }));
     expect(await screen.findByText(/0\s*失败/)).toBeInTheDocument();
   });
