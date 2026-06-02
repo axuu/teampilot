@@ -13,21 +13,21 @@ export default function Assistant() {
   const [q, setQ] = useState(""); const [busy, setBusy] = useState(false);
   async function load() { setMsgs(await get<Msg[]>("/api/admin/assistant/messages")); }
   useEffect(() => { void load(); }, []);
-  async function send() {
-    if (!q.trim()) return;
+  async function send(question?: string) {
+    const text = (question ?? q).trim();
+    if (!text || busy) return;
     setBusy(true);
-    const question = q;
     try {
-      const r = await post<object>("/api/admin/assistant/ask", { question });
+      const r = await post<object>("/api/admin/assistant/ask", { question: text });
       setQ("");
       const nowIso = new Date().toISOString();
-      setMsgs((prev) => [...prev, { role: "captain", content: question, createdAt: nowIso }, { role: "ai", content: JSON.stringify(r), createdAt: nowIso }]);
+      setMsgs((prev) => [...prev, { role: "captain", content: text, createdAt: nowIso }, { role: "ai", content: JSON.stringify(r), createdAt: nowIso }]);
     } finally { setBusy(false); }
   }
   return (
     <div className="max-w-3xl">
       <h1 className="text-xl font-bold mb-3">AI 队长助理</h1>
-      <div className="flex gap-2 mb-3 flex-wrap">{EXAMPLES.map((e)=><button key={e} className="text-xs border rounded px-2 py-1 text-gray-600" onClick={()=>setQ(e)}>{e}</button>)}</div>
+      <div className="flex gap-2 mb-3 flex-wrap">{EXAMPLES.map((e)=><button key={e} className="text-xs border rounded px-2 py-1 text-gray-600 disabled:opacity-50" disabled={busy} onClick={()=>void send(e)}>{e}</button>)}</div>
       <div className="bg-white rounded border p-4 space-y-3 min-h-[300px] mb-3">
         {msgs.map((m,i)=>(
           <div key={i}>
@@ -37,7 +37,7 @@ export default function Assistant() {
         ))}
       </div>
       <div className="flex gap-2">
-        <input aria-label="提问输入" className="flex-1 border rounded px-2 py-1" value={q} onChange={(e)=>setQ(e.target.value)} placeholder="请填写" />
+        <input aria-label="提问输入" className="flex-1 border rounded px-2 py-1" value={q} onChange={(e)=>setQ(e.target.value)} onKeyDown={(ev)=>{ if(ev.key==="Enter"){ ev.preventDefault(); void send(); } }} placeholder="请填写" />
         <button className="bg-blue-600 text-white rounded px-4 disabled:opacity-50" disabled={busy} onClick={()=>void send()}>发送</button>
       </div>
     </div>

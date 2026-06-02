@@ -20,4 +20,14 @@ describe("Assistant", () => {
     expect(await screen.findByText(/近一月训练稳定/)).toBeInTheDocument();
     expect(screen.getByText(/依据近4场出勤/)).toBeInTheDocument();
   });
+  it("clicking an example question sends it immediately", async () => {
+    render(<Assistant />);
+    await userEvent.click(await screen.findByRole("button", { name: "总结近一个月内的训练情况" }));
+    expect(await screen.findByText(/近一月训练稳定/)).toBeInTheDocument();
+  });
+  it("pressing Enter in the input sends the question", async () => {
+    render(<Assistant />);
+    await userEvent.type(screen.getByLabelText("提问输入"), "近一月训练情况？{Enter}");
+    expect(await screen.findByText(/近一月训练稳定/)).toBeInTheDocument();
+  });
 });

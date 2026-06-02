@@ -72,4 +72,22 @@ describe("scenarios", () => {
     expect(user).not.toContain("内部秘密备注");
     expect(system).toContain("只返回 JSON 对象");
   });
+  it("training advice prompt includes type, roster rule and JSON guard", async () => {
+    const a = await actWithParticipants("training", 2);
+    const llm = fakeLLM({ goal: "目标".repeat(30), plan: "安排".repeat(60) });
+    await generateTrainingAdvice(a.id, llm, new Date());
+    const [system, user] = (llm.completeJSON as any).mock.calls.at(-1);
+    expect(user).toContain("活动类型：训练");
+    expect(user).toContain("如果无人反馈");
+    expect(system).toContain("只返回 JSON 对象");
+  });
+  it("activity summary prompt marks initial stage and omits review (时机A)", async () => {
+    const a = await actWithParticipants("training", 2);
+    const llm = fakeLLM({ summary: "发布后总结".repeat(10) });
+    await generateActivitySummary(a.id, llm, new Date());
+    const [system, user] = (llm.completeJSON as any).mock.calls.at(-1);
+    expect(user).toContain("initial");
+    expect(user).not.toContain("AI复盘总结");
+    expect(system).toContain("只返回 JSON 对象");
+  });
 });

@@ -21,9 +21,9 @@ export async function generateTrainingAdvice(activityId: string, llm: LLMClient,
   const settings = await prisma.teamSettings.findUnique({ where: { id: "singleton" } });
   const members = await goingOrAllMembers(activityId);
   const history = await recentSummaries(now);
-  const system = "你是藤球队的训练助理。只依据给定数据生成训练建议，缺数据要说明，不编造。输出 JSON：{goal, plan}。goal 50-150字，plan 100-400字。不安排未在名单中的队员。";
+  const system = "你是藤球队的训练助理。只依据给定数据生成训练建议，缺数据要说明，不编造，用建议式语气（建议/可考虑），不要写成强制命令。不得安排未出现在参加人员名单中的队员。输出 JSON：{goal, plan}。goal 50-150字，plan 100-400字。" + OUTPUT_GUARD;
   const rules = settings?.trainingRules?.trim() ? `\n【队长训练规则，优先参考】\n${settings.trainingRules}` : "";
-  const user = `【活动】${a.name} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })} / ${a.durationMinutes}分钟 / ${a.location}\n【主题】${a.theme ?? "未填写"}\n【注意事项】${a.notes ?? "未填写"}\n【参加人员】\n${members.map((m)=>memberLine(m)).join("\n")}\n【近2月历史摘要】\n${historyBlock(history)}${rules}`;
+  const user = `【活动】${a.name} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })} / ${a.durationMinutes}分钟 / ${a.location}\n【活动类型：训练】\n【主题】${a.theme ?? "未填写"}\n【注意事项】${a.notes ?? "未填写"}\n【参加人员】（以下名单为已反馈"去"的队员；如果无人反馈"去"，系统会传入本次活动全部参加人员）\n${members.map((m)=>memberLine(m)).join("\n")}\n【近2月历史摘要】\n${historyBlock(history)}${rules}`;
   return parse(llm, system, user, zTrainingAdvice);
 }
 
@@ -65,8 +65,8 @@ export async function generateActivitySummary(activityId: string, llm: LLMClient
   if (!a) throw new Error("not_found");
   const hasReview = !!a.review?.aiSummary;
   const presentCount = a.participants.filter((p)=>p.actualAttendance === "present").length;
-  const system = "你是藤球队记录助理。生成面向全员的活动精简总结，不含内部评价/队长备注。输出 JSON：{summary}（50-500字）。时机A只描述安排与参与；时机B在基础上追加核心复盘要点。";
-  const user = `【活动】${a.name} / ${a.type === "training" ? "训练" : "比赛"} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })} / ${a.location}\n【主题】${a.theme ?? "（无）"}\n【注意事项】${a.notes ?? "（无）"}\n【参加人数】${a.participants.length}` + (hasReview ? `\n【实际到场人数】${presentCount}\n【AI复盘总结】${a.review!.aiSummary}` : "");
+  const system = "你是藤球队记录助理。生成面向全员的活动精简总结，不含内部评价/队长备注/复盘原文等不适合公开的信息。生成时机为 initial 时只描述已确认的活动安排与参与范围，不预判训练/比赛效果；生成时机为 post_review 时才在基础上追加 AI 复盘总结中的核心公开要点。输出 JSON：{summary}（50-500字）。" + OUTPUT_GUARD;
+  const user = `【活动】${a.name} / ${a.type === "training" ? "训练" : "比赛"} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })} / ${a.location}\n【生成时机】${hasReview ? "post_review" : "initial"}\n【主题】${a.theme ?? "（无）"}\n【注意事项】${a.notes ?? "（无）"}\n【参加人数】${a.participants.length}` + (hasReview ? `\n【实际到场人数】${presentCount}\n【AI复盘总结】${a.review!.aiSummary}` : "");
   const parsed = await parse(llm, system, user, zActivitySummary);
   await prisma.activity.update({ where: { id: activityId }, data: { summary: parsed.summary, summaryStage: hasReview ? "post_review" : "initial", summaryUpdatedAt: now } });
   return parsed;

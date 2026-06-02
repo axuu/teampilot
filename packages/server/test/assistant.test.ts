@@ -21,4 +21,13 @@ describe("assistant session", () => {
     expect(out.judgment).toContain("判断");
     expect(await prisma.assistantMessage.count()).toBe(2);
   });
+  it("ask system prompt declares 当前判断/判断依据 and data-only constraint", async () => {
+    const completeJSON = vi.fn().mockResolvedValue(JSON.stringify({ judgment: "判断".repeat(20), basis: "依据".repeat(20) }));
+    await ask("近一月？", { completeJSON } as any, new Date());
+    const [system] = (completeJSON as any).mock.calls.at(-1);
+    expect(system).toContain("当前判断");
+    expect(system).toContain("判断依据");
+    expect(system).toContain("只引用系统真实数据");
+    expect(system).toContain("只返回 JSON 对象");
+  });
 });
