@@ -37,6 +37,7 @@ export function makeReviewsRouter(llm: LLMClient, asr: AsrProvider = volcAsrProv
     if (!act) return res.status(404).json({ error: "活动不存在" });
     try {
       const out = act.type === "training" ? await generateTrainingAdvice(act.id, llm, new Date()) : await generateMatchAdvice(act.id, llm, new Date());
+      await prisma.activity.update({ where: { id: act.id }, data: { advice: JSON.stringify(out), adviceUpdatedAt: new Date() } });
       res.json(out);
     } catch (e) { res.status(500).json({ error: (e as Error).message }); }
   });

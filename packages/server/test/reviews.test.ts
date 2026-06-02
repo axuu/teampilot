@@ -32,4 +32,18 @@ describe("reviews", () => {
     expect(res.status).toBe(200);
     expect(res.body.goal).toContain("目标");
   });
+  it("persists advice and returns it on detail; regenerate replaces", async () => {
+    const act = await prisma.activity.create({ data: { name:"训练", type:"training", status:"published", location:"x", startTime:new Date() } });
+    const agent = await login();
+    completeJSON.mockResolvedValueOnce(JSON.stringify({ goal:"目标A".repeat(20), plan:"安排A".repeat(40) }));
+    await agent.post(`/api/admin/activities/${act.id}/advice`);
+    let detail = await agent.get(`/api/admin/activities/${act.id}`);
+    expect(detail.body.advice).toContain("目标A");
+    expect(detail.body.adviceUpdatedAt).toBeTruthy();
+    completeJSON.mockResolvedValueOnce(JSON.stringify({ goal:"目标B".repeat(20), plan:"安排B".repeat(40) }));
+    await agent.post(`/api/admin/activities/${act.id}/advice`);
+    detail = await agent.get(`/api/admin/activities/${act.id}`);
+    expect(detail.body.advice).toContain("目标B");
+    expect(detail.body.advice).not.toContain("目标A");
+  });
 });

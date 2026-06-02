@@ -21,4 +21,10 @@ describe("SummaryTab notification status", () => {
     await userEvent.click(screen.getByRole("button", { name: "重试失败通知" }));
     expect(await screen.findByText(/失败\s*0/)).toBeInTheDocument();
   });
+  it("renders persisted advice on initial load with a regenerate button", async () => {
+    const withAdvice = { ...detail, advice: JSON.stringify({ goal:"既定目标", plan:"既定安排" }) };
+    render(<SummaryTab detail={withAdvice as any} />);
+    expect(await screen.findByText(/既定目标/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "重新生成" })).toBeInTheDocument();
+  });
 });

@@ -51,6 +51,8 @@ model Activity {
   summary          String?
   summaryStage     String    @default("none")
   summaryUpdatedAt DateTime?
+  advice           String?
+  adviceUpdatedAt  DateTime?
   reminderAt       DateTime?
   publishedAt      DateTime?
   endedAt          DateTime?
