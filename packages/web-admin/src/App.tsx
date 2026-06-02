@@ -13,7 +13,7 @@ import Assistant from "./pages/Assistant.js";
 function Shell() {
   const { me, loading, refresh } = useAuth();
   const nav = useNavigate();
-  if (loading) return <div className="p-8">加载中…</div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-base text-ink-soft">加载中…</div>;
   if (!me) return <Login onLoggedIn={() => { void refresh().then(() => nav("/activities")); }} />;
   return (
     <Layout>

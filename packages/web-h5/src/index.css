@@ -1,2 +1,56 @@
-@tailwind base; @tailwind components; @tailwind utilities;
-body { @apply bg-gray-100 text-gray-900; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply font-sans text-base text-ink;
+    min-height: 100vh;
+    background-image: theme("backgroundImage.canvas");
+    background-attachment: fixed;
+  }
+  *,
+  ::before,
+  ::after {
+    border-color: theme("colors.line");
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex h-11 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded text-base font-semibold transition-colors duration-150 ease-out-quart
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-hover active:bg-brand-hover;
+  }
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  /* H5 keeps native form controls (best mobile UX + selectOptions test contract) */
+  .input,
+  .select-native {
+    @apply h-11 w-full rounded border border-line bg-white px-3 text-base text-ink placeholder:text-ink-weak
+           transition-colors duration-150 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25;
+  }
+  .select-native {
+    @apply appearance-none bg-no-repeat pr-9;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236C7374' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+    background-position: right 12px center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

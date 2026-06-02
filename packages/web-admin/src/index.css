@@ -1,2 +1,134 @@
-@tailwind base; @tailwind components; @tailwind utilities;
-body { @apply bg-gray-100 text-gray-900; }
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply font-sans text-base text-ink;
+    min-height: 100vh;
+    background-image: theme("backgroundImage.canvas");
+    background-attachment: fixed;
+  }
+  /* Default any bare `border` to the Pine line color rather than Tailwind gray-200. */
+  *,
+  ::before,
+  ::after {
+    border-color: theme("colors.line");
+  }
+}
+
+@layer components {
+  /* Floating workspace surface */
+  .pine-card {
+    @apply rounded-lg border border-line bg-surface-card shadow-card;
+  }
+
+  /* Buttons — 32px tall, 5px radius, one primary per group */
+  .btn {
+    @apply inline-flex h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded px-3 text-sm font-semibold transition-colors duration-150 ease-out-quart
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand/35 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-hover;
+  }
+  .btn-secondary {
+    @apply btn border border-brand bg-white text-brand hover:bg-brand-soft;
+  }
+  .btn-ghost {
+    @apply btn border border-line bg-white text-ink-soft hover:bg-surface-soft hover:text-ink;
+  }
+  .btn-danger {
+    @apply btn border border-danger-border bg-danger-soft text-danger hover:bg-danger/10;
+  }
+  /* Inline text action (links, "重新生成", "生成复盘"…) — flows on the text baseline */
+  .btn-link {
+    @apply text-sm font-medium text-brand transition-colors hover:text-brand-hover
+           focus-visible:outline-none focus-visible:underline disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  /* Form controls */
+  .field-label {
+    @apply mb-1.5 block text-sm font-medium text-ink;
+  }
+  .input {
+    @apply h-8 w-full rounded border border-line bg-white px-3 text-base text-ink placeholder:text-ink-weak
+           transition-colors duration-150 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25;
+  }
+  .textarea {
+    @apply w-full rounded border border-line bg-white px-3 py-2 text-base leading-relaxed text-ink placeholder:text-ink-weak
+           transition-colors duration-150 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25;
+  }
+
+  /* Table region — 20px radius, 44px rows, #FAF9F8 header */
+  .table-wrap {
+    @apply overflow-hidden rounded-lg border border-line bg-surface;
+  }
+  /* border-separate so a sticky right action column renders reliably across browsers */
+  .table-pine {
+    @apply w-full border-separate border-spacing-0 text-base text-ink;
+  }
+  .table-pine thead th {
+    @apply h-11 whitespace-nowrap border-b border-line bg-surface-head px-4 text-left text-sm font-semibold text-ink-soft;
+  }
+  .table-pine tbody td {
+    @apply h-11 border-b border-line px-4 align-middle;
+  }
+  .table-pine tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  /* Sticky right action column — pinned cells need an opaque bg + a leading divider */
+  .table-pine .col-action {
+    @apply sticky right-0 whitespace-nowrap border-l border-line bg-surface;
+  }
+  .table-pine thead .col-action {
+    @apply bg-surface-head;
+  }
+
+  /* Document typography for AI summaries / reviews */
+  .doc-body {
+    @apply max-w-doc text-base text-ink;
+  }
+  .doc-h {
+    @apply relative mb-2 mt-6 text-base font-bold text-ink first:mt-0;
+    margin-left: -11px;
+    padding-left: 11px;
+  }
+  .doc-h::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 14px;
+    border-radius: 999px;
+    background: theme("colors.brand.DEFAULT");
+  }
+  .doc-p {
+    @apply mb-2.5 text-base text-ink;
+    line-height: 1.75;
+  }
+  .doc-body ol {
+    @apply mb-2.5 list-decimal pl-5;
+  }
+  .doc-body li {
+    @apply mb-0;
+    line-height: 1.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

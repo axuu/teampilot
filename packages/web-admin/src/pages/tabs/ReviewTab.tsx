@@ -1,12 +1,18 @@
 import { useEffect, useState } from "react";
 import { get, put, post } from "../../api.js";
+import DocBody, { type DocSection } from "../../components/DocBody.js";
 import { useToast } from "../../components/Toast.js";
+import { Sparkle, Mic } from "../../components/icons.js";
 
 type Detail = { id: string; name: string; type: string; status: string };
 const labelMap: Record<string, string> = { overall: "整体总结", goalDone: "目标完成情况", problems: "主要问题", improvements: "后续改进建议" };
-function renderSummary(json: string | null) {
-  if (!json) return null;
-  try { const o = JSON.parse(json); return Object.entries(o).map(([k, v]) => `${labelMap[k] ?? k}：${v}`).join("\n"); } catch { return json; }
+
+function summarySections(json: string | null): DocSection[] {
+  if (!json) return [];
+  try {
+    const o = JSON.parse(json);
+    return Object.entries(o).map(([k, v]) => ({ heading: labelMap[k] ?? k, body: String(v) }));
+  } catch { return [{ body: json }]; }
 }
 
 export default function ReviewTab({ detail }: { detail: Detail }) {
@@ -35,21 +41,29 @@ export default function ReviewTab({ detail }: { detail: Detail }) {
       setUploading(false);
     }
   }
-  const summaryText = renderSummary(aiSummary);
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-doc space-y-6">
       <section>
-        <h3 className="font-semibold mb-2">AI 复盘总结</h3>
-        {!rawNotes.trim() && <p className="text-gray-400 text-sm">暂无复盘内容。在你填写复盘记录后，可以生成复盘。</p>}
-        {rawNotes.trim() && !summaryText && <p className="text-sm">你可以根据"我的复盘记录"中的内容 <button className="text-blue-600" disabled={busy} onClick={() => void generate()}>生成复盘</button></p>}
-        {summaryText && <><pre className="whitespace-pre-wrap text-sm bg-gray-50 rounded p-3">{summaryText}</pre><button className="text-blue-600 text-sm mt-1" disabled={busy} onClick={() => void generate()}>重新生成</button></>}
+        <h3 className="mb-2.5 flex items-center gap-1.5 text-base font-semibold text-ink"><Sparkle size={16} className="text-brand" />AI 复盘总结</h3>
+        {!rawNotes.trim() && <p className="text-base text-ink-weak">暂无复盘内容。在你填写复盘记录后，可以生成复盘。</p>}
+        {rawNotes.trim() && !aiSummary && (
+          <p className="text-base text-ink">你可以根据“我的复盘记录”中的内容 <button className="btn-link" disabled={busy} onClick={() => void generate()}>生成复盘</button></p>
+        )}
+        {aiSummary && (
+          <div className="rounded-md border border-line bg-surface-soft/60 p-4">
+            <DocBody sections={summarySections(aiSummary)} />
+            <button className="btn-link mt-2 inline-block" disabled={busy} onClick={() => void generate()}>重新生成</button>
+          </div>
+        )}
       </section>
+
       <section>
-        <h3 className="font-semibold mb-2">我的复盘记录</h3>
-        <textarea className="w-full border rounded p-2 h-40" value={rawNotes} onChange={(e) => setRaw(e.target.value)} onBlur={() => void saveNotes()} placeholder="请填写" />
-        <div className="mt-1">
-          <label className={`text-sm ${uploading ? "text-gray-400" : "text-blue-600 cursor-pointer"}`}>
-            + 转写录音
+        <h3 className="mb-2.5 text-base font-semibold text-ink">我的复盘记录</h3>
+        <textarea className="textarea h-40" value={rawNotes} onChange={(e) => setRaw(e.target.value)} onBlur={() => void saveNotes()} placeholder="请填写" />
+        <div className="mt-2">
+          <label className={`btn-secondary inline-flex w-auto cursor-pointer ${uploading ? "pointer-events-none opacity-50" : ""}`}>
+            <Mic size={16} /> {uploading ? "转写中…" : "转写录音"}
             <input type="file" accept=".mp3,.wav,.ogg,.m4a" className="hidden" disabled={uploading} onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
           </label>
         </div>
