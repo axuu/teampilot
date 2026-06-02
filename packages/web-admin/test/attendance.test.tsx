@@ -30,8 +30,10 @@ describe("AttendanceTab", () => {
   });
   it("shows a toast when marking fails", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({ ok:false, status:409, json: async()=>({ error:"仅可标记已结束活动的到场" }) } as Response);
-    renderTab(endedDetail);
+    const onChanged = vi.fn();
+    renderTab(endedDetail, onChanged);
     await userEvent.click(screen.getByRole("button", { name: "标记已到场" }));
     expect(await screen.findByText("标记失败，请重试")).toBeInTheDocument();
+    expect(onChanged).not.toHaveBeenCalled();
   });
 });

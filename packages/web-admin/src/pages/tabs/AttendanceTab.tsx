@@ -28,8 +28,8 @@ export default function AttendanceTab({ detail, onChanged }: { detail: Detail; o
           <td className="p-2">{p.member.level ?? "-"}</td><td className="p-2">{p.member.style ?? "-"}</td><td className="p-2">{p.member.captainNote || "-"}</td>
           {ended ? (
             <td className="p-2 whitespace-nowrap">
-              <button className="text-blue-600 mr-2" onClick={()=>void mark(p.memberId,"present")}>标记已到场</button>
-              <button className="text-gray-600" onClick={()=>void mark(p.memberId,"absent")}>标记未到场</button>
+              <button type="button" className="text-blue-600 mr-2" onClick={()=>void mark(p.memberId,"present")}>标记已到场</button>
+              <button type="button" className="text-gray-600" onClick={()=>void mark(p.memberId,"absent")}>标记未到场</button>
             </td>
           ) : (
             <td className="p-2 text-gray-400 text-xs whitespace-nowrap">活动结束后可标记</td>
