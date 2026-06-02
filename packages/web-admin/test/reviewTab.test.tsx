@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import ReviewTab from "../src/pages/tabs/ReviewTab.js";
 import { ToastProvider } from "../src/components/Toast.js";
@@ -36,7 +36,9 @@ describe("ReviewTab", () => {
     });
     render(<ToastProvider><ReviewTab detail={detail as any} /></ToastProvider>);
     const ta = await screen.findByDisplayValue("已有内容");
-    await userEvent.type(ta, "手输补充");
+    // fireEvent.change 设值但不聚焦，避免上传时触发 textarea 的 onBlur 保存，
+    // 真实复现"未失焦输入直接上传"：唯一的保存必须来自 upload() 本身
+    fireEvent.change(ta, { target: { value: "已有内容手输补充" } });
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     await userEvent.upload(fileInput, new File(["x"], "a.mp3", { type: "audio/mpeg" }));
     await waitFor(() => expect(calls).toEqual(["put", "transcribe"]));
