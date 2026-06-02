@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { positionLabel, levelLabel } from "@teampilot/shared";
+import { memberLine } from "../src/ai/context.js";
 
 describe("enum labels", () => {
   it("maps positions to Chinese", () => {
@@ -17,5 +18,12 @@ describe("enum labels", () => {
     expect(positionLabel(null)).toBe("");
     expect(levelLabel(undefined)).toBe("");
     expect(positionLabel("unknown")).toBe("unknown");
+  });
+});
+
+describe("memberLine §9.6 Chinese labels", () => {
+  it("renders position/level as Chinese labels", () => {
+    const m = { name: "甲", primaryPosition: "tekong", backupPosition: "feeder", level: "advanced", style: null, captainNote: null };
+    expect(memberLine(m)).toBe("甲（主位 发球手，备位 二传手，水平 高水平）");
   });
 });

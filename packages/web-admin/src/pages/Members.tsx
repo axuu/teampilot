@@ -39,7 +39,7 @@ export default function Members() {
             <td className="p-2">{m.name}</td><td className="p-2">{m.jerseyNumber ?? "-"}</td><td className="p-2">{positionLabel(m.primaryPosition)}</td>
             <td className="p-2">{m.backupPosition ? positionLabel(m.backupPosition) : "-"}</td><td className="p-2">{levelLabel(m.level) || "-"}</td><td className="p-2">{m.style ?? "-"}</td>
             <td className="p-2">{m.status==="active"?"正常":"离队"}</td>
-            <td className="p-2 max-w-[160px] truncate" title={m.captainNote || ""}>{m.captainNote || "-"}</td>
+            <td className="p-2 max-w-[160px] truncate" title={m.captainNote ?? undefined}>{m.captainNote || "-"}</td>
             <td className="p-2"><button className="text-blue-600" onClick={()=>setEditing(m)}>编辑</button></td>
           </tr>))}
         </tbody>
