@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { get, post } from "../api.js";
 
 type Msg = { role: string; content: string; createdAt: string };
@@ -10,19 +10,20 @@ function renderContent(content: string) {
 
 export default function Assistant() {
   const [msgs, setMsgs] = useState<Msg[]>([]);
-  const [q, setQ] = useState(""); const [busy, setBusy] = useState(false);
+  const [q, setQ] = useState(""); const [busy, setBusy] = useState(false); const busyRef = useRef(false);
   async function load() { setMsgs(await get<Msg[]>("/api/admin/assistant/messages")); }
   useEffect(() => { void load(); }, []);
   async function send(question?: string) {
     const text = (question ?? q).trim();
-    if (!text || busy) return;
+    if (!text || busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     try {
       const r = await post<object>("/api/admin/assistant/ask", { question: text });
       setQ("");
       const nowIso = new Date().toISOString();
       setMsgs((prev) => [...prev, { role: "captain", content: text, createdAt: nowIso }, { role: "ai", content: JSON.stringify(r), createdAt: nowIso }]);
-    } finally { setBusy(false); }
+    } finally { busyRef.current = false; setBusy(false); }
   }
   return (
     <div className="max-w-3xl">

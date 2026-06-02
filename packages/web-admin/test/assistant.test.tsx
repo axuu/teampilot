@@ -30,4 +30,18 @@ describe("Assistant", () => {
     await userEvent.type(screen.getByLabelText("提问输入"), "近一月训练情况？{Enter}");
     expect(await screen.findByText(/近一月训练稳定/)).toBeInTheDocument();
   });
+  it("does not double-submit while a request is in flight", async () => {
+    let askCount = 0;
+    (globalThis.fetch as any).mockImplementation(async (url: any) => {
+      if (String(url).endsWith("/messages")) return { ok:true, status:200, json: async()=>[] } as Response;
+      if (String(url).endsWith("/ask")) { askCount++; return await new Promise<Response>(()=>{}); } // never resolves → stays busy
+      return { ok:true, status:200, json: async()=>({}) } as Response;
+    });
+    render(<Assistant />);
+    const input = screen.getByLabelText("提问输入");
+    await userEvent.type(input, "问题");
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("{Enter}");
+    expect(askCount).toBe(1);
+  });
 });
