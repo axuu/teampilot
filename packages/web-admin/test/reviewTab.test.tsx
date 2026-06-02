@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { userEvent } from "@testing-library/user-event";
 import ReviewTab from "../src/pages/tabs/ReviewTab.js";
 import { ToastProvider } from "../src/components/Toast.js";
@@ -22,5 +22,24 @@ describe("ReviewTab", () => {
     expect(await screen.findByDisplayValue("今天发球不错")).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "生成复盘" }));
     expect(await screen.findByText(/整体不错/)).toBeInTheDocument();
+  });
+
+  it("saves current unblurred notes before transcribing", async () => {
+    const calls: string[] = [];
+    let putBody: any = null;
+    vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+      const u = String(url);
+      if (u.endsWith("/review") && init?.method === "PUT") { calls.push("put"); putBody = JSON.parse(String(init.body)); return { ok:true, status:200, json: async()=>({}) } as Response; }
+      if (u.endsWith("/review")) return { ok:true, status:200, json: async()=>({ rawNotes:"已有内容", aiSummary:null }) } as Response;
+      if (u.includes("/review/transcribe")) { calls.push("transcribe"); return { ok:true, status:200, json: async()=>({ text:"转写文本" }) } as Response; }
+      return { ok:true, status:200, json: async()=>({}) } as Response;
+    });
+    render(<ToastProvider><ReviewTab detail={detail as any} /></ToastProvider>);
+    const ta = await screen.findByDisplayValue("已有内容");
+    await userEvent.type(ta, "手输补充");
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    await userEvent.upload(fileInput, new File(["x"], "a.mp3", { type: "audio/mpeg" }));
+    await waitFor(() => expect(calls).toEqual(["put", "transcribe"]));
+    expect(putBody.rawNotes).toContain("手输补充");
   });
 });
