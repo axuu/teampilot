@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { get, post } from "../../api.js";
 
 type Detail = { id: string; status: string; type:string; startTime:string; durationMinutes:number; location:string; theme:string|null; notes:string|null; summary:string|null; advice?:string|null };
+function parseAdvice(raw: string | null | undefined) {
+  if (!raw) return null;
+  try { return JSON.parse(raw); } catch { return null; }
+}
 export default function SummaryTab({ detail }: { detail: Detail }) {
   const end = new Date(new Date(detail.startTime).getTime() + detail.durationMinutes*60000);
   const fmt = (d: Date) => d.toLocaleString("zh-CN");
 
   const [notif, setNotif] = useState<{ success: number; failed: number } | null>(null);
-  const [advice, setAdvice] = useState<any>(detail.advice ? JSON.parse(detail.advice) : null); const [adviceBusy, setAdviceBusy] = useState(false);
+  const [advice, setAdvice] = useState<any>(parseAdvice(detail.advice)); const [adviceBusy, setAdviceBusy] = useState(false);
   const adviceLabel = detail.type === "training" ? "训练建议" : "比赛建议";
   async function genAdvice() { setAdviceBusy(true); try { setAdvice(await post(`/api/admin/activities/${detail.id}/advice`)); } catch { /* ignore */ } finally { setAdviceBusy(false); } }
   useEffect(() => {
