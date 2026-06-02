@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { post } from "./api.js";
 import { getJoinToken, type FeishuBridge } from "./feishu.js";
-import { POSITIONS, MEMBER_LEVELS, MEMBER_STYLES } from "@teampilot/shared";
+import { POSITIONS, MEMBER_LEVELS, MEMBER_STYLES, positionLabel, levelLabel } from "@teampilot/shared";
 
 type View = "loading" | "identity_failed" | "invalid_link" | "form" | "joined" | "contact_captain";
 
@@ -46,9 +46,9 @@ export default function JoinPage({ bridge }: { bridge: FeishuBridge }) {
         <h1 className="text-lg font-bold">加入球队</h1>
         <div><label><span className="text-red-600">*</span> 姓名</label><input aria-label="姓名" className="block w-full border rounded px-2 py-1" value={f.name} onChange={(e)=>set("name",e.target.value)} placeholder="请填写" /></div>
         <div><label><span className="text-red-600">*</span> 擅长位置</label>
-          <select aria-label="擅长位置" className="block w-full border rounded px-2 py-1" value={f.primaryPosition} onChange={(e)=>set("primaryPosition",e.target.value)}><option value="">请选择</option>{POSITIONS.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
-        <div><label>备选位置</label><select aria-label="备选位置" className="block w-full border rounded px-2 py-1" value={f.backupPosition} onChange={(e)=>set("backupPosition",e.target.value)}><option value="">请选择</option>{POSITIONS.map(p=><option key={p} value={p}>{p}</option>)}</select></div>
-        <div><label>水平</label><select aria-label="水平" className="block w-full border rounded px-2 py-1" value={f.level} onChange={(e)=>set("level",e.target.value)}><option value="">请选择</option>{MEMBER_LEVELS.map(l=><option key={l} value={l}>{l}</option>)}</select></div>
+          <select aria-label="擅长位置" className="block w-full border rounded px-2 py-1" value={f.primaryPosition} onChange={(e)=>set("primaryPosition",e.target.value)}><option value="">请选择</option>{POSITIONS.map(p=><option key={p} value={p}>{positionLabel(p)}</option>)}</select></div>
+        <div><label>备选位置</label><select aria-label="备选位置" className="block w-full border rounded px-2 py-1" value={f.backupPosition} onChange={(e)=>set("backupPosition",e.target.value)}><option value="">请选择</option>{POSITIONS.map(p=><option key={p} value={p}>{positionLabel(p)}</option>)}</select></div>
+        <div><label>水平</label><select aria-label="水平" className="block w-full border rounded px-2 py-1" value={f.level} onChange={(e)=>set("level",e.target.value)}><option value="">请选择</option>{MEMBER_LEVELS.map(l=><option key={l} value={l}>{levelLabel(l)}</option>)}</select></div>
         <div><label>风格</label><select aria-label="风格" className="block w-full border rounded px-2 py-1" value={f.style} onChange={(e)=>set("style",e.target.value)}><option value="">请选择</option>{MEMBER_STYLES.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
         {err && <p className="text-red-600 text-sm">{err}</p>}
         <button className="w-full bg-blue-600 text-white rounded py-2 disabled:opacity-50" disabled={submitting || !f.name || !f.primaryPosition} onClick={()=>void submit()}>{submitting ? "提交中…" : "申请加入球队"}</button>

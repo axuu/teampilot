@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { get, put } from "../api.js";
 import Modal from "../components/Modal.js";
 import { useToast } from "../components/Toast.js";
-import { POSITIONS, MEMBER_LEVELS, MEMBER_STYLES, MEMBER_STATUSES } from "@teampilot/shared";
+import { POSITIONS, MEMBER_LEVELS, MEMBER_STYLES, MEMBER_STATUSES, positionLabel, levelLabel } from "@teampilot/shared";
 
 type Member = { id: string; name: string; jerseyNumber: string | null; primaryPosition: string; backupPosition: string | null; level: string | null; style: string | null; status: string; captainNote: string | null };
 type Settings = { joinLink: string };
@@ -29,16 +29,17 @@ export default function Members() {
           <option value="">全部状态</option>{MEMBER_STATUSES.map((s)=><option key={s} value={s}>{s==="active"?"正常":"离队"}</option>)}
         </select>
         <select className="border rounded px-2 py-1" value={position} onChange={(e)=>setPosition(e.target.value)}>
-          <option value="">全部位置</option>{POSITIONS.map((p)=><option key={p} value={p}>{p}</option>)}
+          <option value="">全部位置</option>{POSITIONS.map((p)=><option key={p} value={p}>{positionLabel(p)}</option>)}
         </select>
       </div>
       <table className="w-full bg-white rounded-card border text-sm">
-        <thead><tr className="text-left text-gray-500 border-b">{["姓名","球衣号","主要位置","备选位置","水平","风格","状态","操作"].map(h=><th key={h} className="p-2">{h}</th>)}</tr></thead>
+        <thead><tr className="text-left text-gray-500 border-b">{["姓名","球衣号","主要位置","备选位置","水平","风格","状态","队长备注","操作"].map(h=><th key={h} className="p-2">{h}</th>)}</tr></thead>
         <tbody>{rows.map((m)=>(
           <tr key={m.id} className="border-b">
-            <td className="p-2">{m.name}</td><td className="p-2">{m.jerseyNumber ?? "-"}</td><td className="p-2">{m.primaryPosition}</td>
-            <td className="p-2">{m.backupPosition ?? "-"}</td><td className="p-2">{m.level ?? "-"}</td><td className="p-2">{m.style ?? "-"}</td>
+            <td className="p-2">{m.name}</td><td className="p-2">{m.jerseyNumber ?? "-"}</td><td className="p-2">{positionLabel(m.primaryPosition)}</td>
+            <td className="p-2">{m.backupPosition ? positionLabel(m.backupPosition) : "-"}</td><td className="p-2">{levelLabel(m.level) || "-"}</td><td className="p-2">{m.style ?? "-"}</td>
             <td className="p-2">{m.status==="active"?"正常":"离队"}</td>
+            <td className="p-2 max-w-[160px] truncate" title={m.captainNote || ""}>{m.captainNote || "-"}</td>
             <td className="p-2"><button className="text-blue-600" onClick={()=>setEditing(m)}>编辑</button></td>
           </tr>))}
         </tbody>
@@ -48,8 +49,7 @@ export default function Members() {
         <Modal title="邀请队员入队" onClose={()=>setInvite(false)}
           footer={<><button className="border rounded px-3 py-1" onClick={()=>setInvite(false)}>关闭</button>
             <button className="bg-blue-600 text-white rounded px-3 py-1" onClick={async()=>{const s = await get<Settings>("/api/admin/settings"); await navigator.clipboard.writeText(s.joinLink); toast("已复制链接");}}>复制链接</button></>}>
-          <p className="text-sm text-gray-600">请将以下链接在飞书中发给同学。同学可在此页面填写信息并申请入队：</p>
-          <p className="text-xs text-gray-400">点击"复制链接"获取邀请地址</p>
+          <p className="text-sm text-gray-600">点击"复制链接"获取邀请地址，并在飞书中发送。</p>
         </Modal>
       )}
 
@@ -72,18 +72,14 @@ function EditMember({ m, onClose, onSaved }: { m: Member; onClose: ()=>void; onS
   return (
     <Modal title="编辑队员" onClose={onClose}
       footer={<><button className="border rounded px-3 py-1" onClick={onClose}>取消</button><button className="bg-blue-600 text-white rounded px-3 py-1" onClick={()=>void save()}>保存</button></>}>
-      <input aria-label="姓名" className="w-full border rounded px-2 py-1" value={f.name} onChange={(e)=>set("name",e.target.value)} placeholder="请填写" />
-      <input aria-label="球衣号" className="w-full border rounded px-2 py-1" value={f.jerseyNumber} onChange={(e)=>set("jerseyNumber",e.target.value)} placeholder="请填写" />
-      <select aria-label="主要位置" className="w-full border rounded px-2 py-1" value={f.primaryPosition} onChange={(e)=>set("primaryPosition",e.target.value)}>{POSITIONS.map(p=><option key={p} value={p}>{p}</option>)}</select>
-      <select aria-label="备选位置" className="w-full border rounded px-2 py-1" value={f.backupPosition} onChange={(e)=>set("backupPosition",e.target.value)}><option value="">请选择</option>{POSITIONS.map(p=><option key={p} value={p}>{p}</option>)}</select>
-      <select aria-label="水平" className="w-full border rounded px-2 py-1" value={f.level} onChange={(e)=>set("level",e.target.value)}><option value="">请选择</option>{MEMBER_LEVELS.map(l=><option key={l} value={l}>{l}</option>)}</select>
-      <select aria-label="风格" className="w-full border rounded px-2 py-1" value={f.style} onChange={(e)=>set("style",e.target.value)}><option value="">请选择</option>{MEMBER_STYLES.map(s=><option key={s} value={s}>{s}</option>)}</select>
-      <select aria-label="状态" className="w-full border rounded px-2 py-1" value={f.status} onChange={(e)=>set("status",e.target.value)}>{MEMBER_STATUSES.map(s=><option key={s} value={s}>{s==="active"?"正常":"离队"}</option>)}</select>
-      <div data-testid="note-field">
-        <label className="block text-sm">队长备注</label>
-        <textarea aria-label="队长备注" maxLength={100} className="w-full border rounded px-2 py-1" value={f.captainNote} onChange={(e)=>set("captainNote",e.target.value)} placeholder="请填写" />
-        <span className="text-xs text-gray-400">剩余 {100 - f.captainNote.length}</span>
-      </div>
+      <div><label className="block text-sm mb-1">姓名</label><input aria-label="姓名" className="w-full border rounded px-2 py-1" value={f.name} onChange={(e)=>set("name",e.target.value)} placeholder="请填写" /></div>
+      <div><label className="block text-sm mb-1">球衣号</label><input aria-label="球衣号" className="w-full border rounded px-2 py-1" value={f.jerseyNumber} onChange={(e)=>set("jerseyNumber",e.target.value)} placeholder="请填写" /></div>
+      <div><label className="block text-sm mb-1">主要位置</label><select aria-label="主要位置" className="w-full border rounded px-2 py-1" value={f.primaryPosition} onChange={(e)=>set("primaryPosition",e.target.value)}>{POSITIONS.map(p=><option key={p} value={p}>{positionLabel(p)}</option>)}</select></div>
+      <div><label className="block text-sm mb-1">备选位置</label><select aria-label="备选位置" className="w-full border rounded px-2 py-1" value={f.backupPosition} onChange={(e)=>set("backupPosition",e.target.value)}><option value="">请选择</option>{POSITIONS.map(p=><option key={p} value={p}>{positionLabel(p)}</option>)}</select></div>
+      <div><label className="block text-sm mb-1">水平</label><select aria-label="水平" className="w-full border rounded px-2 py-1" value={f.level} onChange={(e)=>set("level",e.target.value)}><option value="">请选择</option>{MEMBER_LEVELS.map(l=><option key={l} value={l}>{levelLabel(l)}</option>)}</select></div>
+      <div><label className="block text-sm mb-1">风格</label><select aria-label="风格" className="w-full border rounded px-2 py-1" value={f.style} onChange={(e)=>set("style",e.target.value)}><option value="">请选择</option>{MEMBER_STYLES.map(s=><option key={s} value={s}>{s}</option>)}</select></div>
+      <div><label className="block text-sm mb-1">状态</label><select aria-label="状态" className="w-full border rounded px-2 py-1" value={f.status} onChange={(e)=>set("status",e.target.value)}>{MEMBER_STATUSES.map(s=><option key={s} value={s}>{s==="active"?"正常":"离队"}</option>)}</select></div>
+      <div data-testid="note-field"><label className="block text-sm mb-1">队长备注</label><textarea aria-label="队长备注" maxLength={100} className="w-full border rounded px-2 py-1" value={f.captainNote} onChange={(e)=>set("captainNote",e.target.value)} placeholder="请填写" /></div>
     </Modal>
   );
 }

@@ -1,4 +1,5 @@
 import { prisma } from "../db/client.js";
+import { positionLabel, levelLabel } from "@teampilot/shared";
 
 const TWO_MONTHS = 60 * 86400000;
 
@@ -29,9 +30,9 @@ export async function activeMembersForAI() {
 }
 
 export function memberLine(m: { name: string; primaryPosition: string; backupPosition: string | null; level: string | null; style: string | null; captainNote: string | null }, includeNote = true) {
-  const parts = [`${m.name}（主位 ${m.primaryPosition}`];
-  if (m.backupPosition) parts.push(`备位 ${m.backupPosition}`);
-  if (m.level) parts.push(`水平 ${m.level}`);
+  const parts = [`${m.name}（主位 ${positionLabel(m.primaryPosition)}`];
+  if (m.backupPosition) parts.push(`备位 ${positionLabel(m.backupPosition)}`);
+  if (m.level) parts.push(`水平 ${levelLabel(m.level)}`);
   if (m.style) parts.push(`风格 ${m.style}`);
   if (includeNote && m.captainNote) parts.push(`备注 ${m.captainNote}`);
   return parts.join("，") + "）";
