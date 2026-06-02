@@ -20,4 +20,20 @@ describe("answerMemberQuestion", () => {
     const userArg = (llm.completeJSON as any).mock.calls.at(-1)[1] as string;
     expect(userArg).not.toContain("内部备注秘密");
   });
+  it("falls back to activity.summary when no review aiSummary", async () => {
+    await prisma.member.create({ data: { name: "丙", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_fb" } });
+    await prisma.activity.create({ data: { name: "旧训练", type: "training", status: "ended", location: "x", startTime: new Date(Date.now()-86400000), summary: "上次活动的公开总结" } });
+    await answerMemberQuestion("ou_fb", "上次复盘", llm, new Date());
+    const userArg = (llm.completeJSON as any).mock.calls.at(-1)[1] as string;
+    expect(userArg).toContain("上次活动的公开总结");
+  });
+  it("prefers review.aiSummary over activity.summary", async () => {
+    await prisma.member.create({ data: { name: "丁", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_pref" } });
+    const a = await prisma.activity.create({ data: { name: "旧训练2", type: "training", status: "ended", location: "x", startTime: new Date(Date.now()-86400000), summary: "活动总结X" } });
+    await prisma.activityReview.create({ data: { activityId: a.id, rawNotes: "r", aiSummary: "AI复盘摘要Y" } });
+    await answerMemberQuestion("ou_pref", "上次复盘", llm, new Date());
+    const userArg = (llm.completeJSON as any).mock.calls.at(-1)[1] as string;
+    expect(userArg).toContain("AI复盘摘要Y");
+    expect(userArg).not.toContain("活动总结X");
+  });
 });

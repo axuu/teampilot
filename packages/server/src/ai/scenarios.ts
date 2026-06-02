@@ -1,6 +1,6 @@
 import { prisma } from "../db/client.js";
 import type { LLMClient } from "./client.js";
-import { recentSummaries, memberLine, historyBlock } from "./context.js";
+import { recentSummaries, memberLine, historyBlock, OUTPUT_GUARD } from "./context.js";
 import { zTrainingAdvice, zMatchAdvice, zReviewTraining, zReviewMatch, zActivitySummary } from "./schemas.js";
 
 async function parse<T>(llm: LLMClient, system: string, user: string, schema: { parse: (x: unknown) => T }): Promise<T> {
@@ -34,9 +34,9 @@ export async function generateMatchAdvice(activityId: string, llm: LLMClient, no
   const settings = await prisma.teamSettings.findUnique({ where: { id: "singleton" } });
   const members = await goingOrAllMembers(activityId);
   const history = await recentSummaries(now);
-  const system = "你是藤球队的比赛助理。基于给定数据给比赛建议，用'建议/可考虑'措辞，不强制阵容，不把未反馈去的人排首发。输出 JSON：{strategy(50-200字), starting(50-200字), bench(50-150字)}。";
+  const system = "你是藤球队的比赛助理。基于给定数据给比赛建议，用'建议/可考虑'措辞，不强制阵容。不得把未出现在参加人员名单中的队员排入首发或替补。输出 JSON：{strategy(50-200字), starting(50-200字), bench(50-150字)}。" + OUTPUT_GUARD;
   const rules = settings?.matchRules?.trim() ? `\n【队长比赛规则，优先参考】\n${settings.matchRules}` : "";
-  const user = `【比赛】${a.name} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })} / ${a.location}\n【主题】${a.theme ?? "未填写"}\n【注意事项(含对手/赛制)】${a.notes ?? "未填写"}\n【参加人员】\n${members.map((m)=>memberLine(m)).join("\n")}\n【近2月历史摘要】\n${historyBlock(history)}${rules}`;
+  const user = `【比赛】${a.name} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })} / ${a.location}\n【活动类型：比赛】\n【预计时长：${a.durationMinutes}分钟】\n【主题】${a.theme ?? "未填写"}\n【注意事项(含对手/赛制)】${a.notes ?? "未填写"}\n【参加人员】（以下名单为已反馈"去"的队员；如果无人反馈"去"，系统会传入本次活动全部参加人员）\n${members.map((m)=>memberLine(m)).join("\n")}\n【近2月历史摘要】\n${historyBlock(history)}${rules}`;
   return parse(llm, system, user, zMatchAdvice);
 }
 
@@ -49,8 +49,8 @@ export async function generateReviewSummary(activityId: string, reviewLLM: LLMCl
   const history = await recentSummaries(now);
   const isTraining = a.type === "training";
   const fields = isTraining ? "{overall(80-200字), goalDone(50-150字), problems(50-150字), improvements(50-150字)}" : "{overall(80-200字), problems(50-150字), improvements(50-150字)}";
-  const system = `你是藤球队复盘助理。只基于"我的复盘记录"生成结构化复盘，不编造，不评价未到场队员，不做个人评价/比较，信息不足写"未提供"，面向全员公开不含内部内容。输出 JSON：${fields}。`;
-  const user = `【活动】${a.name} / ${isTraining?"训练":"比赛"} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}\n【主题】${a.theme ?? "未填写"}\n【实际到场】\n${present.map((m)=>memberLine(m)).join("\n") || "（无）"}\n【我的复盘记录】\n${review.rawNotes}\n【近2月历史摘要】\n${historyBlock(history)}`;
+  const system = `你是藤球队复盘助理。只基于"我的复盘记录"生成结构化复盘，不编造，不评价未到场队员，不做个人评价/比较，信息不足写"未提供"。复盘摘要面向全体队员公开可见，不得输出队长备注原文、复盘原文、录音转写原文或不适合公开的内部内容。输出 JSON：${fields}。` + OUTPUT_GUARD;
+  const user = `【活动】${a.name} / ${isTraining?"训练":"比赛"} / ${a.startTime.toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" })}\n【主题】${a.theme ?? "未填写"}\n【注意事项】${a.notes ?? "未填写"}\n【实际到场】\n${present.map((m)=>memberLine(m, false)).join("\n") || "（无）"}\n【我的复盘记录】\n${review.rawNotes}\n【近2月历史摘要】\n${historyBlock(history)}`;
   const parsed = isTraining ? await parse(reviewLLM, system, user, zReviewTraining) : await parse(reviewLLM, system, user, zReviewMatch);
   const aiSummary = JSON.stringify(parsed);
   await prisma.activityReview.update({ where: { activityId }, data: { aiSummary, aiSummaryUpdatedAt: now } });

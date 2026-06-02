@@ -2,6 +2,9 @@ import { prisma } from "../db/client.js";
 
 const TWO_MONTHS = 60 * 86400000;
 
+// §9.2 全局 LLM 输出约束：所有调用豆包 Mini2.0 的场景统一追加到 system prompt
+export const OUTPUT_GUARD = "【输出要求】只依据给定数据回答，缺少信息时写未提供或信息不足，不要编造；只返回 JSON 对象，不要输出 Markdown 代码块或额外解释文字，不要在 JSON 前后添加任何前后缀；字段名必须严格匹配，不新增、不改名、不漏字段。";
+
 export type HistorySummary = { name: string; date: Date; type: string; content: string };
 
 // 已结束活动、近2月、倒序、≤8；每条 aiSummary 优先否则 summary；都无则跳过

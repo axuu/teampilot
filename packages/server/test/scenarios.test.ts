@@ -46,4 +46,30 @@ describe("scenarios", () => {
     const act = await prisma.activity.findUnique({ where: { id: a.id } });
     expect(act?.summaryStage).toBe("initial");
   });
+  it("match advice prompt includes duration, type, roster rule and JSON guard", async () => {
+    const a = await actWithParticipants("match", 2);
+    await prisma.activity.update({ where: { id: a.id }, data: { durationMinutes: 90 } });
+    const llm = fakeLLM({ strategy: "策略".repeat(30), starting: "首发".repeat(30), bench: "替补".repeat(30) });
+    await generateMatchAdvice(a.id, llm, new Date());
+    const [system, user] = (llm.completeJSON as any).mock.calls.at(-1);
+    expect(user).toContain("90分钟");
+    expect(user).toContain("活动类型：比赛");
+    expect(user).toContain("如果无人反馈");
+    expect(system).toContain("不得把未出现在参加人员名单中的队员排入首发或替补");
+    expect(system).toContain("只返回 JSON 对象");
+  });
+  it("review prompt includes notes, excludes captainNote, has JSON guard", async () => {
+    const a = await actWithParticipants("training", 0);
+    await prisma.activity.update({ where: { id: a.id }, data: { status: "ended", notes: "记得带护具", theme: "发球" } });
+    const m = await prisma.member.create({ data: { name: "乙", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_rev", captainNote: "内部秘密备注" } });
+    await prisma.activityParticipant.create({ data: { activityId: a.id, memberId: m.id, attendanceResponse: "going", actualAttendance: "present" } });
+    await prisma.activityReview.create({ data: { activityId: a.id, rawNotes: "复盘内容" } });
+    const reviewLLM = fakeLLM({ overall: "总结".repeat(40), goalDone: "完成".repeat(30), problems: "问题".repeat(30), improvements: "改进".repeat(30) });
+    const summaryLLM = fakeLLM({ summary: "精简".repeat(20) });
+    await generateReviewSummary(a.id, reviewLLM, summaryLLM, new Date());
+    const [system, user] = (reviewLLM.completeJSON as any).mock.calls.at(-1);
+    expect(user).toContain("记得带护具");
+    expect(user).not.toContain("内部秘密备注");
+    expect(system).toContain("只返回 JSON 对象");
+  });
 });
