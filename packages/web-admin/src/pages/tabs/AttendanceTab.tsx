@@ -1,13 +1,20 @@
 import { post } from "../../api.js";
+import { useToast } from "../../components/Toast.js";
 type P = { memberId:string; attendanceResponse:string; actualAttendance:string|null; member:{ name:string; jerseyNumber:string|null; primaryPosition:string; backupPosition:string|null; level:string|null; style:string|null; status:string; captainNote:string|null } };
-type Detail = { id:string; participants:P[] };
+type Detail = { id:string; status:string; participants:P[] };
 const resp: Record<string,string> = { going:"去", not_going:"不去", no_response:"未反馈" };
 const act: Record<string,string> = { present:"已到场", absent:"未到场", pending:"待确认" };
 
 export default function AttendanceTab({ detail, onChanged }: { detail: Detail; onChanged: ()=>void }) {
+  const toast = useToast();
+  const ended = detail.status === "ended";
   async function mark(memberId:string, value:"present"|"absent") {
-    await post(`/api/admin/activities/${detail.id}/participants/${memberId}/attendance`, { value });
-    onChanged();
+    try {
+      await post(`/api/admin/activities/${detail.id}/participants/${memberId}/attendance`, { value });
+      onChanged();
+    } catch {
+      toast("标记失败，请重试");
+    }
   }
   return (
     <table className="w-full bg-white rounded-card border text-sm">
@@ -19,10 +26,14 @@ export default function AttendanceTab({ detail, onChanged }: { detail: Detail; o
           <td className="p-2">{p.member.status==="active"?"正常":"离队"}</td><td className="p-2">{p.member.jerseyNumber ?? "-"}</td>
           <td className="p-2">{p.member.primaryPosition}</td><td className="p-2">{p.member.backupPosition ?? "-"}</td>
           <td className="p-2">{p.member.level ?? "-"}</td><td className="p-2">{p.member.style ?? "-"}</td><td className="p-2">{p.member.captainNote || "-"}</td>
-          <td className="p-2 whitespace-nowrap">
-            <button className="text-blue-600 mr-2" onClick={()=>void mark(p.memberId,"present")}>标记已到场</button>
-            <button className="text-gray-600" onClick={()=>void mark(p.memberId,"absent")}>标记未到场</button>
-          </td>
+          {ended ? (
+            <td className="p-2 whitespace-nowrap">
+              <button className="text-blue-600 mr-2" onClick={()=>void mark(p.memberId,"present")}>标记已到场</button>
+              <button className="text-gray-600" onClick={()=>void mark(p.memberId,"absent")}>标记未到场</button>
+            </td>
+          ) : (
+            <td className="p-2 text-gray-400 text-xs whitespace-nowrap">活动结束后可标记</td>
+          )}
         </tr>))}
       </tbody>
     </table>
