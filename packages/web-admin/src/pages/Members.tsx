@@ -49,7 +49,7 @@ export default function Members() {
         <Modal title="邀请队员入队" onClose={()=>setInvite(false)}
           footer={<><button className="border rounded px-3 py-1" onClick={()=>setInvite(false)}>关闭</button>
             <button className="bg-blue-600 text-white rounded px-3 py-1" onClick={async()=>{const s = await get<Settings>("/api/admin/settings"); await navigator.clipboard.writeText(s.joinLink); toast("已复制链接");}}>复制链接</button></>}>
-          <p className="text-sm text-gray-600">点击"复制链接"获取邀请地址，并在飞书中发送。</p>
+          <p className="text-sm text-gray-600">点击“复制链接”获取邀请地址，并在飞书中发送。</p>
         </Modal>
       )}
 

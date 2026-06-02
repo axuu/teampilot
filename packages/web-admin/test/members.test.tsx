@@ -31,7 +31,7 @@ describe("Members", () => {
   it("invite modal shows new copy and copies link", async () => {
     renderPage();
     await userEvent.click(await screen.findByRole("button", { name: "邀请队员" }));
-    expect(screen.getByText('点击"复制链接"获取邀请地址，并在飞书中发送。')).toBeInTheDocument();
+    expect(screen.getByText('点击“复制链接”获取邀请地址，并在飞书中发送。')).toBeInTheDocument();
     expect(screen.queryByText(/请将以下链接在飞书中发给同学/)).toBeNull();
     await userEvent.click(screen.getByRole("button", { name: "复制链接" }));
     expect(navigator.clipboard.writeText).toHaveBeenCalled();
