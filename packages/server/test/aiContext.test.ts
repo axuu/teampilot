@@ -32,6 +32,14 @@ describe("memberAttendanceStats", () => {
     expect(s.present).toBe(1);
     expect(s.rate).toBe(100);
   });
+
+  it("returns rate 0 when no ended activities in window", async () => {
+    await prisma.member.create({ data: { name: "新人", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_new" } });
+    const stats = await memberAttendanceStats(new Date(), 30);
+    const s = stats.find((x) => x.name === "新人")!;
+    expect(s.rate).toBe(0);
+    expect(s.going).toBe(0);
+  });
 });
 
 describe("recentSummaries", () => {

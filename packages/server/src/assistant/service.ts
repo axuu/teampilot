@@ -48,7 +48,7 @@ export async function ask(question: string, llm: LLMClient, now: Date) {
     `【对话上下文(10分钟内)】\n${convo || "（新会话）"}`,
     `【当前问题】\n${question}`,
     `【队长规则】\n训练规则：${settings?.trainingRules?.trim() || "暂无"}\n比赛规则：${settings?.matchRules?.trim() || "暂无"}\n默认地点：${settings?.defaultLocation || "暂无"}`,
-    `【队员资料】（姓名、球衣号、主位、备位、水平、风格、队长备注）\n${members.map((m) => memberLine(m)).join("\n") || "（无）"}`,
+    `【队员资料】（姓名、主位、备位、水平、风格、队长备注）\n${members.map((m) => memberLine(m)).join("\n") || "（无）"}`,
     `【队伍位置概况】\n${positionBreakdown(members)}`,
     `【未来已发布活动】\n${futureBlock(future)}`,
     `【近2月活动摘要】\n${endedBlock(ended)}`,
