@@ -44,4 +44,22 @@ describe("Assistant", () => {
     await userEvent.keyboard("{Enter}");
     expect(askCount).toBe(1);
   });
+  it("shows the user's message immediately while the request is in flight", async () => {
+    (globalThis.fetch as any).mockImplementation(async (url: any) => {
+      if (String(url).endsWith("/messages")) return { ok:true, status:200, json: async()=>[] } as Response;
+      if (String(url).endsWith("/ask")) return await new Promise<Response>(()=>{}); // never resolves
+      return { ok:true, status:200, json: async()=>({}) } as Response;
+    });
+    render(<Assistant />);
+    await userEvent.type(screen.getByLabelText("提问输入"), "立即显示的问题");
+    await userEvent.click(screen.getByRole("button", { name: "发送" }));
+    expect(await screen.findByText("立即显示的问题")).toBeInTheDocument();
+  });
+  it("does not duplicate the user message after the request resolves", async () => {
+    render(<Assistant />);
+    await userEvent.type(screen.getByLabelText("提问输入"), "唯一问题");
+    await userEvent.click(screen.getByRole("button", { name: "发送" }));
+    expect(await screen.findByText(/近一月训练稳定/)).toBeInTheDocument();
+    expect(screen.getAllByText("唯一问题")).toHaveLength(1);
+  });
 });

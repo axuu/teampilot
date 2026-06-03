@@ -24,12 +24,17 @@ export default function Assistant() {
     if (!text || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
+    setQ("");
+    const askedAt = new Date().toISOString();
+    setMsgs((prev) => [...prev, { role: "captain", content: text, createdAt: askedAt }]);
     try {
       const r = await post<object>("/api/admin/assistant/ask", { question: text });
-      setQ("");
-      const nowIso = new Date().toISOString();
-      setMsgs((prev) => [...prev, { role: "captain", content: text, createdAt: nowIso }, { role: "ai", content: JSON.stringify(r), createdAt: nowIso }]);
-    } finally { busyRef.current = false; setBusy(false); }
+      setMsgs((prev) => [...prev, { role: "ai", content: JSON.stringify(r), createdAt: new Date().toISOString() }]);
+    } catch {
+      setMsgs((prev) => [...prev, { role: "ai", content: "⚠️ 生成失败，请稍后重试", createdAt: new Date().toISOString() }]);
+    } finally {
+      busyRef.current = false; setBusy(false);
+    }
   }
 
   return (
