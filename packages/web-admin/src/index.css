@@ -95,7 +95,6 @@
   }
   .doc-h {
     @apply relative mb-2 mt-6 text-base font-bold text-ink first:mt-0;
-    margin-left: -11px;
     padding-left: 11px;
   }
   .doc-h::before {
@@ -106,7 +105,7 @@
     transform: translateY(-50%);
     width: 3px;
     height: 14px;
-    border-radius: 999px;
+    border-radius: 2px;
     background: theme("colors.brand.DEFAULT");
   }
   .doc-p {

@@ -4,6 +4,7 @@ import { get, post, put } from "../api.js";
 import Modal from "../components/Modal.js";
 import { useToast } from "../components/Toast.js";
 import { positionLabel, levelLabel } from "@teampilot/shared";
+import { Radio, Checkbox } from "../components/Controls.js";
 
 type Member = { id: string; name: string; jerseyNumber: string | null; primaryPosition: string; backupPosition: string | null; level: string | null; style: string | null; status: string };
 
@@ -71,8 +72,8 @@ export default function ActivityForm() {
         <div>
           <label className="field-label"><Req /> 活动类型</label>
           <div className="flex gap-5">
-            <label className="flex cursor-pointer items-center gap-2 text-base text-ink"><input aria-label="类型-训练" type="radio" name="type" className="h-4 w-4 accent-brand" checked={type === "training"} onChange={() => setType("training")} />训练</label>
-            <label className="flex cursor-pointer items-center gap-2 text-base text-ink"><input aria-label="类型-比赛" type="radio" name="type" className="h-4 w-4 accent-brand" checked={type === "match"} onChange={() => setType("match")} />比赛</label>
+            <Radio name="type" ariaLabel="类型-训练" checked={type === "training"} onChange={() => setType("training")}>训练</Radio>
+            <Radio name="type" ariaLabel="类型-比赛" checked={type === "match"} onChange={() => setType("match")}>比赛</Radio>
           </div>
         </div>
         <div className="flex flex-wrap gap-3.5">
@@ -88,13 +89,13 @@ export default function ActivityForm() {
       <div className="table-wrap overflow-x-auto">
         <table className="table-pine min-w-[760px]">
           <thead><tr>
-            <th className="w-12"><input aria-label="全选" type="checkbox" className="h-4 w-4 accent-brand" checked={allSelected} onChange={toggleAll} /></th>
+            <th className="w-12"><Checkbox ariaLabel="全选" checked={allSelected} onChange={toggleAll} /></th>
             {["姓名", "球衣号", "主要位置", "备选位置", "水平", "风格", "状态"].map((h) => <th key={h}>{h}</th>)}
           </tr></thead>
           <tbody>
             {members.map((m) => (
               <tr key={m.id} className={selected.has(m.id) ? "bg-brand-soft/40" : ""}>
-                <td><input aria-label={`参加-${m.name}`} type="checkbox" className="h-4 w-4 accent-brand" checked={selected.has(m.id)} onChange={() => toggle(m.id)} /></td>
+                <td><Checkbox ariaLabel={`参加-${m.name}`} checked={selected.has(m.id)} onChange={() => toggle(m.id)} /></td>
                 <td className="font-medium">{m.name}</td>
                 <td className="text-ink-soft">{m.jerseyNumber ?? "-"}</td>
                 <td>{positionLabel(m.primaryPosition)}</td>
