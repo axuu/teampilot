@@ -10,7 +10,7 @@ const ITEMS = [
 
 export default function MobileNav() {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-around border-t border-line bg-surface-card px-2.5 backdrop-blur-xl md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-sticky flex h-16 items-center justify-around border-t border-line bg-surface-card px-2.5 backdrop-blur-xl md:hidden">
       {ITEMS.map(({ to, label, Icon }) => (
         <NavLink
           key={to}
