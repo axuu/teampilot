@@ -55,3 +55,9 @@ export const Link = ({ className, size }: P) => (
 export const Pencil = ({ className, size }: P) => (
   <svg {...base(size)} className={className}><path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" /></svg>
 );
+export const Clock = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}><circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15 14" /></svg>
+);
+export const MapPin = ({ className, size }: P) => (
+  <svg {...base(size)} className={className}><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+);

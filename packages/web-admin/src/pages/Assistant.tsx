@@ -38,10 +38,10 @@ export default function Assistant() {
   }
 
   return (
-    <div className="mx-auto flex h-[calc(100vh-176px)] max-w-chat flex-col">
+    <div className="mx-auto flex h-[calc(100vh-176px)] max-w-chat flex-col max-md:h-[calc(100vh-132px)]">
       <h1 className="mb-3 text-lg font-semibold text-ink">AI 队长助理</h1>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface-card">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-lg border border-line bg-surface-card max-md:rounded-none max-md:border-0 max-md:bg-transparent">
         {/* message list */}
         <div ref={listRef} className="flex-1 overflow-auto px-6 py-6">
           {msgs.length === 0 ? (

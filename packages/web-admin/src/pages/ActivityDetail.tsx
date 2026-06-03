@@ -33,9 +33,9 @@ export default function ActivityDetail() {
         <span className="text-ink-soft">{detail.name}</span>
       </nav>
 
-      <div className="mb-5 flex items-center justify-between gap-4">
+      <div className="mb-5 flex flex-col items-start gap-3 md:flex-row md:items-center md:justify-between md:gap-4">
         <h1 className="text-xl font-bold text-ink">{detail.name}</h1>
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2 md:w-auto">
           {s === "draft" && <>
             <button className="btn-ghost" onClick={() => nav(`/activities/${id}/edit`)}>编辑</button>
             <button className="btn-primary" onClick={async () => { await post(`/api/admin/activities/${id}/publish`); void load(); }}>发布</button>

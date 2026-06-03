@@ -110,10 +110,10 @@ export default function ActivityForm() {
       </div>
 
       {err && <p className="mt-4 rounded border border-danger-border bg-danger-soft px-3 py-2 text-sm text-danger">{err}</p>}
-      <div className="mt-6 flex gap-2">
-        <button className="btn-ghost" onClick={() => nav(-1)}>取消</button>
-        <button className="btn-secondary" onClick={() => void saveDraft()}>保存草稿</button>
-        <button className="btn-primary" onClick={onPublishClick}>发布</button>
+      <div className="mt-6 flex flex-col gap-2 md:flex-row">
+        <button className="btn-ghost w-full md:w-auto" onClick={() => nav(-1)}>取消</button>
+        <button className="btn-secondary w-full md:w-auto" onClick={() => void saveDraft()}>保存草稿</button>
+        <button className="btn-primary w-full md:w-auto" onClick={onPublishClick}>发布</button>
       </div>
 
       {confirm && (

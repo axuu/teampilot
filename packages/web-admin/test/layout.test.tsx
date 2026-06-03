@@ -17,4 +17,10 @@ describe("Layout", () => {
     expect(screen.getByText("退出登录")).toBeInTheDocument();
     expect(screen.getByText("内容")).toBeInTheDocument();
   });
+
+  it("renders mobile bottom nav tabs", async () => {
+    render(<AuthProvider><MemoryRouter><Layout><div>内容</div></Layout></MemoryRouter></AuthProvider>);
+    expect(await screen.findByText("助手")).toBeInTheDocument();
+    expect(screen.getByText("活动")).toBeInTheDocument();
+  });
 });

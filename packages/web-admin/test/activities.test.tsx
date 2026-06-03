@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Activities from "../src/pages/Activities.js";
 
@@ -14,10 +14,11 @@ beforeEach(() => {
 describe("Activities", () => {
   it("renders rows with type/status labels + derived columns and a 创建活动 link", async () => {
     render(<MemoryRouter><Activities /></MemoryRouter>);
-    expect(await screen.findByText("周日训练")).toBeInTheDocument();
-    expect(screen.getByText("训练")).toBeInTheDocument();
-    expect(screen.getByText("已发布")).toBeInTheDocument();
-    expect(screen.getByText("3 去 ｜ 1 不去 ｜ 2 未反馈")).toBeInTheDocument();
+    const table = within(await screen.findByRole("table"));
+    expect(table.getByText("周日训练")).toBeInTheDocument();
+    expect(table.getByText("训练")).toBeInTheDocument();
+    expect(table.getByText("已发布")).toBeInTheDocument();
+    expect(table.getByText("3 去 ｜ 1 不去 ｜ 2 未反馈")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "创建活动" })).toBeInTheDocument();
   });
 

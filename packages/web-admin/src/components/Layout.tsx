@@ -1,6 +1,7 @@
 import { NavLink, Link } from "react-router-dom";
 import { useAuth } from "../auth/useAuth.js";
 import { Users, Calendar, Sparkle, Gear, Logout } from "./icons.js";
+import MobileNav from "./MobileNav.js";
 
 const NAV = [
   { to: "/members", label: "队员管理", Icon: Users },
@@ -15,7 +16,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Sidebar sits directly on the gradient canvas — transparent, never a solid white rail */}
-      <aside className="flex w-[224px] shrink-0 flex-col px-4 py-5">
+      <aside className="hidden w-[224px] shrink-0 flex-col px-4 py-5 md:flex">
         <Link to="/activities" className="mb-6 flex items-center gap-2.5 px-2">
           <span className="grid h-8 w-8 place-items-center rounded-md bg-brand text-white shadow-card">
             <Sparkle size={18} />
@@ -70,11 +71,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Floating content card */}
-      <main className="min-w-0 flex-1 py-4 pr-4">
+      <main className="min-w-0 flex-1 py-4 pl-4 pr-4 pb-20 md:pl-0 md:pb-4">
         <div className="pine-card flex h-full flex-col overflow-hidden">
           <div className="flex-1 overflow-auto p-6">{children}</div>
         </div>
       </main>
+      <MobileNav />
     </div>
   );
 }

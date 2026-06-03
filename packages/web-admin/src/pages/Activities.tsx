@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { get } from "../api.js";
 import Select from "../components/Select.js";
 import Badge from "../components/Badge.js";
-import { Plus } from "../components/icons.js";
+import { Plus, Clock, MapPin } from "../components/icons.js";
 import { ACTIVITY_TYPES, ACTIVITY_STATUSES } from "@teampilot/shared";
 
 type Row = { id: string; name: string; type: string; startTime: string; location: string; status: string; attendanceSummary: string; reviewStatus: string };
@@ -34,7 +34,7 @@ export default function Activities() {
           options={[{ value: "", label: "全部状态" }, ...ACTIVITY_STATUSES.map((s) => ({ value: s, label: statusLabel[s] }))]} />
       </div>
 
-      <div className="table-wrap overflow-x-auto">
+      <div className="table-wrap hidden overflow-x-auto md:block">
         <table className="table-pine min-w-[940px]">
           <thead><tr>{COLS.map((h) => <th key={h}>{h}</th>)}<th className="col-action">操作</th></tr></thead>
           <tbody>
@@ -62,6 +62,25 @@ export default function Activities() {
             )}
           </tbody>
         </table>
+      </div>
+      <div className="flex flex-col gap-4 md:hidden">
+        {rows.map((a) => (
+          <Link key={a.id} to={`/activities/${a.id}`} className="flex flex-col gap-3 rounded-lg border border-line bg-surface p-4">
+            <div className="flex items-start justify-between gap-2">
+              <span className="text-base font-semibold text-ink">{a.name}</span>
+              <Badge tone="neutral">{typeLabel(a.type)}</Badge>
+            </div>
+            <div className="flex flex-col gap-1.5 border-b border-line pb-3 text-sm text-ink-soft">
+              <span className="flex items-center gap-1.5"><Clock size={14} className="text-ink-weak" />{new Date(a.startTime).toLocaleString("zh-CN")}</span>
+              <span className="flex items-center gap-1.5"><MapPin size={14} className="text-ink-weak" />{a.location}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <Badge tone={statusTone[a.status] ?? "neutral"}>{statusLabel[a.status]}</Badge>
+              <span className="text-xs text-ink-soft">{a.attendanceSummary}</span>
+            </div>
+          </Link>
+        ))}
+        {rows.length === 0 && <p className="py-8 text-center text-sm text-ink-weak">暂无活动，点击右上角「创建活动」开始</p>}
       </div>
     </div>
   );
