@@ -48,7 +48,12 @@ export default function Activities() {
                 <td className="whitespace-nowrap text-ink-soft">{a.attendanceSummary}</td>
                 <td className="text-ink-soft">{a.reviewStatus}</td>
                 <td className="col-action">
-                  <Link className="text-sm font-medium text-brand transition-colors hover:text-brand-hover" to={`/activities/${a.id}`}>详情</Link>
+                  <div className="flex items-center gap-3">
+                    {a.status === "draft" && (
+                      <Link className="text-sm font-medium text-brand transition-colors hover:text-brand-hover" to={`/activities/${a.id}/edit`}>编辑</Link>
+                    )}
+                    <Link className="text-sm font-medium text-brand transition-colors hover:text-brand-hover" to={`/activities/${a.id}`}>详情</Link>
+                  </div>
                 </td>
               </tr>
             ))}
