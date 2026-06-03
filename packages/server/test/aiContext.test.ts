@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { resetDb } from "./helpers/db.js";
 import { prisma } from "../src/db/client.js";
-import { recentSummaries } from "../src/ai/context.js";
+import { recentSummaries, positionBreakdown, memberAttendanceStats } from "../src/ai/context.js";
 
 beforeEach(resetDb);
 const DAY = 86400000;
@@ -11,6 +11,28 @@ async function ended(name: string, daysAgo: number, opts: { aiSummary?: string; 
   if (opts.aiSummary !== undefined) await prisma.activityReview.create({ data: { activityId: a.id, rawNotes: "r", aiSummary: opts.aiSummary } });
   return a;
 }
+
+describe("positionBreakdown", () => {
+  it("counts active members by primary position with Chinese labels", () => {
+    const out = positionBreakdown([
+      { primaryPosition: "tekong" }, { primaryPosition: "tekong" }, { primaryPosition: "feeder" }, { primaryPosition: "striker" },
+    ]);
+    expect(out).toBe("发球手 2 人，二传手 1 人，攻球手 1 人");
+  });
+});
+
+describe("memberAttendanceStats", () => {
+  it("computes present rate over ended activities within window", async () => {
+    const m = await prisma.member.create({ data: { name: "甲", primaryPosition: "tekong", status: "active", feishuOpenId: "ou_stat" } });
+    const a = await prisma.activity.create({ data: { name: "上次训练", type: "training", status: "ended", location: "x", startTime: new Date(Date.now() - 3 * DAY) } });
+    await prisma.activityParticipant.create({ data: { activityId: a.id, memberId: m.id, attendanceResponse: "going", actualAttendance: "present" } });
+    const stats = await memberAttendanceStats(new Date(), 30);
+    const s = stats.find((x) => x.name === "甲")!;
+    expect(s.going).toBe(1);
+    expect(s.present).toBe(1);
+    expect(s.rate).toBe(100);
+  });
+});
 
 describe("recentSummaries", () => {
   it("prefers aiSummary, falls back to activity summary", async () => {
