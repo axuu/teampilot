@@ -90,4 +90,20 @@ describe("scenarios", () => {
     expect(user).not.toContain("AI复盘总结");
     expect(system).toContain("只返回 JSON 对象");
   });
+  it("training advice prompt includes captain training rules", async () => {
+    const a = await actWithParticipants("training", 1);
+    await prisma.teamSettings.upsert({ where: { id: "singleton" }, create: { id: "singleton", defaultLocation: "主场", trainingRules: "每次先热身10分钟" }, update: { trainingRules: "每次先热身10分钟" } });
+    const llm = fakeLLM({ goal: "目标".repeat(30), plan: "安排".repeat(60) });
+    await generateTrainingAdvice(a.id, llm, new Date());
+    const [, user] = (llm.completeJSON as any).mock.calls.at(-1);
+    expect(user).toContain("每次先热身10分钟");
+  });
+  it("match advice prompt includes captain match rules", async () => {
+    const a = await actWithParticipants("match", 1);
+    await prisma.teamSettings.upsert({ where: { id: "singleton" }, create: { id: "singleton", defaultLocation: "主场", matchRules: "首发稳守反击" }, update: { matchRules: "首发稳守反击" } });
+    const llm = fakeLLM({ strategy: "策略".repeat(30), starting: "首发".repeat(30), bench: "替补".repeat(30) });
+    await generateMatchAdvice(a.id, llm, new Date());
+    const [, user] = (llm.completeJSON as any).mock.calls.at(-1);
+    expect(user).toContain("首发稳守反击");
+  });
 });
